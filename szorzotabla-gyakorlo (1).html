@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Matek Gyakorló</title>
+<style>
+  :root {
+    --bg1: #1e3c72;
+    --bg2: #2a5298;
+    --card: #ffffff;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --dark: #2c3e50;
+    --accent: #3498db;
+    --accent-dark: #2980b9;
+    --grey: #ecf0f1;
+    --grey-dark: #bdc3c7;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 900px;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 24px;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---------- shared header ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  .topbar h1 {
+    font-size: clamp(20px, 3vw, 28px);
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .icon-btn {
+    background: rgba(255,255,255,0.16);
+    border: none;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .finish-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 0 3px 0 #b93a2b;
+  }
+  .finish-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b93a2b; }
+
+  .live-stats {
+    display: flex;
+    gap: 14px;
+  }
+
+  .stat {
+    text-align: center;
+    background: rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 6px 14px;
+    min-width: 70px;
+  }
+
+  .stat .label {
+    font-size: 11px;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat .value {
+    font-size: clamp(16px, 2.2vw, 21px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- MENU VIEW ---------- */
+  #menuView {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .menu-title {
+    color: #fff;
+    text-align: center;
+    margin: 4px 0 20px 0;
+  }
+
+  .menu-title h1 {
+    font-size: clamp(26px, 4.5vw, 38px);
+    margin: 0 0 4px 0;
+    font-weight: 800;
+  }
+
+  .menu-title p {
+    margin: 0;
+    opacity: 0.85;
+    font-size: clamp(13px, 1.6vw, 16px);
+  }
+
+  .tile-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .tile {
+    border: none;
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    color: #fff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    transition: transform 0.08s ease;
+  }
+
+  .tile:active { transform: scale(0.97); }
+
+  .tile .emoji {
+    font-size: clamp(36px, 6vw, 56px);
+  }
+
+  .tile .title {
+    font-size: clamp(17px, 2.4vw, 23px);
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .tile .subtitle {
+    font-size: clamp(11px, 1.5vw, 14px);
+    opacity: 0.9;
+    text-align: center;
+    max-width: 90%;
+  }
+
+  .tile.t1 { background: linear-gradient(135deg, #ff9966, #ff5e62); }
+  .tile.t2 { background: linear-gradient(135deg, #36d1dc, #5b86e5); }
+  .tile.t3 { background: linear-gradient(135deg, #a770ef, #cf8bf3); }
+  .tile.t4 { background: linear-gradient(135deg, #43cea2, #185a9d); }
+
+  /* ---------- CARD (intro / game / summary shared container) ---------- */
+  .card {
+    background: var(--card);
+    border-radius: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    padding-top: clamp(16px, 4vh, 40px);
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+  }
+
+  /* ---------- INTRO VIEW ---------- */
+  #introView { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+  .intro-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .intro-emoji { font-size: clamp(50px, 9vh, 90px); }
+
+  .intro-title {
+    font-size: clamp(24px, 4vh, 34px);
+    font-weight: 800;
+    color: var(--dark);
+    margin: 0;
+  }
+
+  .intro-desc {
+    font-size: clamp(14px, 2vh, 18px);
+    color: #666;
+    max-width: 480px;
+    margin: 0;
+  }
+
+  .start-btn {
+    margin-top: 10px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 22px 60px;
+    font-size: clamp(22px, 3.5vh, 30px);
+    font-weight: 800;
+    box-shadow: 0 5px 0 #219150;
+  }
+  .start-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #219150; }
+
+  /* ---------- GAME VIEW ---------- */
+  #gameView { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+  .problem-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .problem {
+    font-size: clamp(36px, 6.5vh, 72px);
+    font-weight: 800;
+    color: var(--dark);
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  .timer {
+    margin-top: 4px;
+    font-size: clamp(15px, 2vh, 20px);
+    color: var(--accent-dark);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .answer-display {
+    margin-top: clamp(10px, 2.5vh, 18px);
+    min-width: 160px;
+    min-height: clamp(44px, 6vh, 60px);
+    padding: 6px 24px;
+    border-radius: 16px;
+    background: var(--grey);
+    border: 3px solid var(--grey-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(28px, 4.5vh, 44px);
+    font-weight: 700;
+    color: var(--dark);
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .answer-display.filled { border-color: var(--accent); }
+
+  .keypad {
+    margin-top: clamp(12px, 2.5vh, 20px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+    flex-shrink: 0;
+  }
+
+  .key {
+    height: clamp(50px, 8vh, 78px);
+    border: none;
+    border-radius: 16px;
+    background: var(--grey);
+    color: var(--dark);
+    font-size: clamp(22px, 3.5vh, 32px);
+    font-weight: 700;
+    box-shadow: 0 3px 0 var(--grey-dark);
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
+    touch-action: manipulation;
+  }
+
+  .key:active { transform: translateY(3px); box-shadow: 0 0 0 var(--grey-dark); }
+
+  .key.backspace { background: #f5c453; color: #7a5200; box-shadow: 0 3px 0 #d9a53a; }
+  .key.backspace:active { box-shadow: 0 0 0 #d9a53a; }
+
+  .key.enter { background: var(--accent); color: #fff; box-shadow: 0 3px 0 var(--accent-dark); }
+  .key.enter:active { box-shadow: 0 0 0 var(--accent-dark); }
+
+  .feedback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    background: rgba(255,255,255,0.85);
+  }
+
+  .feedback.show { opacity: 1; }
+
+  .feedback svg {
+    width: clamp(120px, 20vh, 200px);
+    height: clamp(120px, 20vh, 200px);
+  }
+
+  .feedback.correct svg { stroke: var(--green); }
+  .feedback.wrong svg { stroke: var(--red); }
+
+  .check-path, .x-path1, .x-path2 {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+  }
+
+  .feedback.show .check-path { animation: draw 0.35s ease forwards; }
+  .feedback.show .x-path1 { animation: draw 0.25s ease forwards; }
+  .feedback.show .x-path2 { animation: draw 0.25s 0.12s ease forwards; }
+
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  /* ---------- SUMMARY VIEW ---------- */
+  #summaryView { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+  .summary-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    text-align: center;
+  }
+
+  .summary-emoji { font-size: clamp(50px, 9vh, 90px); }
+
+  .summary-title {
+    font-size: clamp(22px, 3.5vh, 30px);
+    font-weight: 800;
+    color: var(--dark);
+    margin: 0;
+  }
+
+  .summary-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .summary-card {
+    background: var(--grey);
+    border-radius: 16px;
+    padding: 16px 24px;
+    min-width: 120px;
+  }
+
+  .summary-card .label {
+    font-size: 13px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .summary-card .value {
+    font-size: clamp(24px, 4vh, 34px);
+    font-weight: 800;
+    color: var(--dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .menu-btn {
+    margin-top: 10px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 16px 40px;
+    font-size: clamp(17px, 2.5vh, 22px);
+    font-weight: 700;
+    box-shadow: 0 4px 0 var(--accent-dark);
+  }
+  .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-dark); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ MENU VIEW ============ -->
+  <div id="menuView">
+    <div class="menu-title">
+      <h1>🎯 Matek Gyakorló</h1>
+      <p>Válassz gyakorlási módot</p>
+    </div>
+    <div class="tile-grid">
+      <button class="tile t1" data-mode="mult">
+        <div class="emoji">✖️</div>
+        <div class="title">Szorzótábla</div>
+        <div class="subtitle">1–10-es szorzótábla gyakorlása</div>
+      </button>
+      <button class="tile t2" data-mode="multExtra">
+        <div class="emoji">🧮</div>
+        <div class="title">Szorzás és egyéb műveletek</div>
+        <div class="subtitle">Szorzás + összeadás vagy kivonás</div>
+      </button>
+      <button class="tile t3" data-mode="div">
+        <div class="emoji">➗</div>
+        <div class="title">Osztás</div>
+        <div class="subtitle">A szorzótábla visszafelé</div>
+      </button>
+      <button class="tile t4" data-mode="divExtra">
+        <div class="emoji">🔢</div>
+        <div class="title">Osztás és egyéb műveletek</div>
+        <div class="subtitle">Osztás + összeadás vagy kivonás</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ INTRO VIEW ============ -->
+  <div id="introView" class="hidden">
+    <div class="topbar">
+      <button class="icon-btn" id="introBackBtn">← Vissza</button>
+      <div style="width:1px;"></div>
+    </div>
+    <div class="card">
+      <div class="intro-content">
+        <div class="intro-emoji" id="introEmoji">✖️</div>
+        <h2 class="intro-title" id="introTitle">Szorzótábla</h2>
+        <p class="intro-desc" id="introDesc">1–10-es szorzótábla gyakorlása.</p>
+        <button class="start-btn" id="startBtn">Kezdés</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAME VIEW ============ -->
+  <div id="gameView" class="hidden">
+    <div class="topbar">
+      <div class="live-stats">
+        <div class="stat">
+          <div class="label">Feladatok</div>
+          <div class="value" id="countVal">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Átlagidő</div>
+          <div class="value" id="avgVal">–</div>
+        </div>
+      </div>
+      <button class="finish-btn" id="finishBtn">Befejezés</button>
+    </div>
+
+    <div class="card">
+      <div class="problem-row">
+        <div class="problem" id="problemText">? = ?</div>
+      </div>
+      <div class="timer" id="timerVal">0.0 s</div>
+
+      <div class="answer-display" id="answerDisplay"></div>
+
+      <div class="keypad">
+        <button class="key" data-num="1">1</button>
+        <button class="key" data-num="2">2</button>
+        <button class="key" data-num="3">3</button>
+        <button class="key" data-num="4">4</button>
+        <button class="key" data-num="5">5</button>
+        <button class="key" data-num="6">6</button>
+        <button class="key" data-num="7">7</button>
+        <button class="key" data-num="8">8</button>
+        <button class="key" data-num="9">9</button>
+        <button class="key backspace" id="backspaceKey">⌫</button>
+        <button class="key zero" data-num="0">0</button>
+        <button class="key enter" id="enterKey">✔</button>
+      </div>
+
+      <div class="feedback" id="feedback">
+        <svg id="feedbackSvg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUMMARY VIEW ============ -->
+  <div id="summaryView" class="hidden">
+    <div class="topbar">
+      <h1>Eredmény</h1>
+      <div style="width:1px;"></div>
+    </div>
+    <div class="card">
+      <div class="summary-content">
+        <div class="summary-emoji">🏁</div>
+        <h2 class="summary-title" id="summaryModeTitle">Szorzótábla</h2>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">Megoldott</div>
+            <div class="value" id="sumCount">0</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Átlagidő</div>
+            <div class="value" id="sumAvg">–</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Legjobb</div>
+            <div class="value" id="sumBest">–</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Leglassabb</div>
+            <div class="value" id="sumWorst">–</div>
+          </div>
+        </div>
+        <button class="menu-btn" id="backToMenuBtn">Vissza a főmenübe</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  // ---------- mode definitions ----------
+  var modes = {
+    mult: {
+      title: 'Szorzótábla',
+      emoji: '✖️',
+      desc: '1–10-es szorzótábla gyakorlása.',
+      generate: function() {
+        var a = rand(1, 10), b = rand(1, 10);
+        return { text: a + ' × ' + b, answer: a * b };
+      }
+    },
+    multExtra: {
+      title: 'Szorzás és egyéb műveletek',
+      emoji: '🧮',
+      desc: 'Szorzás után még egy összeadás vagy kivonás is jön.',
+      generate: function() {
+        var a = rand(1, 10), b = rand(1, 10);
+        var product = a * b;
+        var op = Math.random() < 0.5 ? '+' : '-';
+        var c;
+        if (op === '+') {
+          c = rand(1, 9);
+        } else {
+          c = rand(1, Math.min(9, product));
+        }
+        var answer = op === '+' ? product + c : product - c;
+        var sym = op === '+' ? '+' : '−';
+        return { text: a + ' × ' + b + ' ' + sym + ' ' + c, answer: answer };
+      }
+    },
+    div: {
+      title: 'Osztás',
+      emoji: '➗',
+      desc: 'A szorzótábla visszafelé, egész számos osztás.',
+      generate: function() {
+        var d = rand(1, 10), q = rand(1, 10);
+        var dividend = d * q;
+        return { text: dividend + ' ÷ ' + d, answer: q };
+      }
+    },
+    divExtra: {
+      title: 'Osztás és egyéb műveletek',
+      emoji: '🔢',
+      desc: 'Osztás után még egy összeadás vagy kivonás is jön.',
+      generate: function() {
+        var d = rand(1, 10), q = rand(1, 10);
+        var dividend = d * q;
+        var op = Math.random() < 0.5 ? '+' : '-';
+        var c;
+        if (op === '+') {
+          c = rand(1, 9);
+        } else {
+          c = rand(1, Math.min(9, q));
+        }
+        var answer = op === '+' ? q + c : q - c;
+        var sym = op === '+' ? '+' : '−';
+        return { text: dividend + ' ÷ ' + d + ' ' + sym + ' ' + c, answer: answer };
+      }
+    }
+  };
+
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // ---------- state ----------
+  var currentModeId = null;
+  var currentAnswer = 0;
+  var currentInput = "";
+  var startTime = 0;
+  var timerInterval = null;
+  var solveTimes = [];
+  var locked = false;
+
+  // ---------- elements ----------
+  var menuView = document.getElementById('menuView');
+  var introView = document.getElementById('introView');
+  var gameView = document.getElementById('gameView');
+  var summaryView = document.getElementById('summaryView');
+
+  var introEmoji = document.getElementById('introEmoji');
+  var introTitle = document.getElementById('introTitle');
+  var introDesc = document.getElementById('introDesc');
+
+  var problemText = document.getElementById('problemText');
+  var timerVal = document.getElementById('timerVal');
+  var answerDisplay = document.getElementById('answerDisplay');
+  var countVal = document.getElementById('countVal');
+  var avgVal = document.getElementById('avgVal');
+  var feedback = document.getElementById('feedback');
+  var feedbackSvg = document.getElementById('feedbackSvg');
+
+  var summaryModeTitle = document.getElementById('summaryModeTitle');
+  var sumCount = document.getElementById('sumCount');
+  var sumAvg = document.getElementById('sumAvg');
+  var sumBest = document.getElementById('sumBest');
+  var sumWorst = document.getElementById('sumWorst');
+
+  var checkSvg = '<path class="check-path" d="M20 55 L42 75 L82 25"></path>';
+  var xSvg = '<path class="x-path1" d="M25 25 L75 75"></path><path class="x-path2" d="M75 25 L25 75"></path>';
+
+  function fmt(sec) { return sec.toFixed(1) + ' s'; }
+
+  function showView(view) {
+    menuView.classList.add('hidden');
+    introView.classList.add('hidden');
+    gameView.classList.add('hidden');
+    summaryView.classList.add('hidden');
+    view.classList.remove('hidden');
+  }
+
+  // ---------- menu -> intro ----------
+  document.querySelectorAll('.tile').forEach(function(tile) {
+    tile.addEventListener('click', function() {
+      currentModeId = tile.getAttribute('data-mode');
+      var m = modes[currentModeId];
+      introEmoji.textContent = m.emoji;
+      introTitle.textContent = m.title;
+      introDesc.textContent = m.desc;
+      showView(introView);
+    });
+  });
+
+  document.getElementById('introBackBtn').addEventListener('click', function() {
+    showView(menuView);
+  });
+
+  // ---------- intro -> game ----------
+  document.getElementById('startBtn').addEventListener('click', function() {
+    solveTimes = [];
+    updateLiveStats();
+    showView(gameView);
+    newProblem();
+  });
+
+  function updateLiveStats() {
+    countVal.textContent = solveTimes.length;
+    if (solveTimes.length > 0) {
+      var sum = solveTimes.reduce(function(x, y) { return x + y; }, 0);
+      avgVal.textContent = fmt(sum / solveTimes.length);
+    } else {
+      avgVal.textContent = '–';
+    }
+  }
+
+  function startTimer() {
+    stopTimer();
+    startTime = performance.now();
+    timerInterval = setInterval(function() {
+      var elapsed = (performance.now() - startTime) / 1000;
+      timerVal.textContent = fmt(elapsed);
+    }, 100);
+  }
+
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function newProblem() {
+    var p = modes[currentModeId].generate();
+    currentAnswer = p.answer;
+    currentInput = "";
+    locked = false;
+    problemText.textContent = p.text + ' = ?';
+    renderAnswer();
+    feedback.classList.remove('show', 'correct', 'wrong');
+    startTimer();
+  }
+
+  function renderAnswer() {
+    answerDisplay.textContent = currentInput;
+    if (currentInput.length > 0) { answerDisplay.classList.add('filled'); }
+    else { answerDisplay.classList.remove('filled'); }
+  }
+
+  function showFeedback(isCorrect) {
+    feedback.classList.remove('correct', 'wrong');
+    feedbackSvg.innerHTML = isCorrect ? checkSvg : xSvg;
+    feedback.classList.add(isCorrect ? 'correct' : 'wrong');
+    void feedback.offsetWidth;
+    feedback.classList.add('show');
+  }
+
+  function submitAnswer() {
+    if (locked || currentInput.length === 0) return;
+    var value = parseInt(currentInput, 10);
+
+    if (value === currentAnswer) {
+      locked = true;
+      stopTimer();
+      var elapsed = (performance.now() - startTime) / 1000;
+      solveTimes.push(elapsed);
+      timerVal.textContent = fmt(elapsed) + ' ✓';
+      updateLiveStats();
+      showFeedback(true);
+      setTimeout(newProblem, 1000);
+    } else {
+      showFeedback(false);
+      currentInput = "";
+      renderAnswer();
+      setTimeout(function() { feedback.classList.remove('show'); }, 500);
+    }
+  }
+
+  document.querySelectorAll('.key[data-num]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (locked) return;
+      if (currentInput.length >= 3) return;
+      currentInput += btn.getAttribute('data-num');
+      renderAnswer();
+    });
+  });
+
+  document.getElementById('backspaceKey').addEventListener('click', function() {
+    if (locked) return;
+    currentInput = currentInput.slice(0, -1);
+    renderAnswer();
+  });
+
+  document.getElementById('enterKey').addEventListener('click', submitAnswer);
+
+  // ---------- finish -> summary ----------
+  document.getElementById('finishBtn').addEventListener('click', function() {
+    stopTimer();
+    locked = true;
+
+    summaryModeTitle.textContent = modes[currentModeId].title;
+    sumCount.textContent = solveTimes.length;
+
+    if (solveTimes.length > 0) {
+      var sum = solveTimes.reduce(function(x, y) { return x + y; }, 0);
+      sumAvg.textContent = fmt(sum / solveTimes.length);
+      sumBest.textContent = fmt(Math.min.apply(null, solveTimes));
+      sumWorst.textContent = fmt(Math.max.apply(null, solveTimes));
+    } else {
+      sumAvg.textContent = '–';
+      sumBest.textContent = '–';
+      sumWorst.textContent = '–';
+    }
+
+    showView(summaryView);
+  });
+
+  // ---------- summary -> menu ----------
+  document.getElementById('backToMenuBtn').addEventListener('click', function() {
+    showView(menuView);
+  });
+
+  showView(menuView);
+})();
+</script>
+</body>
+</html>
