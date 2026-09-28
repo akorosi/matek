@@ -431,6 +431,25 @@
     box-shadow: 0 4px 0 var(--accent-dark);
   }
   .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-dark); }
+
+  /* ---------- SETTINGS ---------- */
+  .tile-grid { grid-template-rows: 1fr 1fr auto; }
+  .tile.t5 { grid-column: 1 / -1; flex-direction: row; gap: 14px; padding: 14px; background: linear-gradient(135deg, #606c88, #3f4c6b); }
+  .tile.t5 .emoji { font-size: 30px; }
+  #settingsView { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .settings-body { width: 100%; max-width: 640px; }
+  .set-sec { border-bottom: 2px solid var(--grey); padding: 12px 0 16px; }
+  .set-sec h3 { margin: 0 0 10px; font-size: 19px; color: var(--dark); }
+  .st-row { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; }
+  .st-label { font-size: 16px; color: #555; }
+  .st-box { display: flex; align-items: center; gap: 12px; }
+  .st-btn { width: 56px; height: 46px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 26px; font-weight: 700; }
+  .st-btn:active { background: var(--accent-dark); }
+  .st-val { min-width: 44px; text-align: center; font-size: 24px; font-weight: 800; color: var(--dark); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip { min-width: 50px; height: 46px; border: none; border-radius: 12px; background: var(--grey); color: var(--dark); font-size: 18px; font-weight: 700; }
+  .chip.off { background: var(--red); color: #fff; text-decoration: line-through; }
+  .hint { font-size: 13px; color: #888; margin: 10px 0 0; }
 </style>
 </head>
 <body>
@@ -463,6 +482,10 @@
         <div class="title">Osztás és egyéb műveletek</div>
         <div class="subtitle">Osztás + összeadás vagy kivonás</div>
       </button>
+      <button class="tile t5" id="settingsTile">
+        <div class="emoji">⚙️</div>
+        <div class="title">Beállítások</div>
+      </button>
     </div>
   </div>
 
@@ -476,7 +499,8 @@
       <div class="intro-content">
         <div class="intro-emoji" id="introEmoji">✖️</div>
         <h2 class="intro-title" id="introTitle">Szorzótábla</h2>
-        <p class="intro-desc" id="introDesc">1–10-es szorzótábla gyakorlása.</p>
+        <p class="intro-desc" id="introDesc"></p>
+        <p class="intro-desc" id="introRange" style="font-weight:700;color:#2980b9;"></p>
         <button class="start-btn" id="startBtn">Kezdés</button>
       </div>
     </div>
@@ -560,74 +584,104 @@
     </div>
   </div>
 
+  <!-- ============ SETTINGS VIEW ============ -->
+  <div id="settingsView" class="hidden">
+    <div class="topbar">
+      <button class="icon-btn" id="settingsBackBtn">← Vissza</button>
+      <h1>⚙️ Beállítások</h1>
+      <button class="icon-btn" id="settingsResetBtn">Alaphelyzet</button>
+    </div>
+    <div class="card" id="settingsCard"><div class="settings-body" id="settingsBody"></div></div>
+  </div>
+
 </div>
 
 <script>
 (function() {
+  // ---------- settings model ----------
+  var KEY = 'matekGyakorlo.settings.v1';
+  function rng() { return { min: 2, max: 10, banned: [10] }; }
+  function defaults() {
+    return { mult: rng(), multExtra: rng(), div: rng(), divExtra: rng(),
+             add: { min: 1, max: 9 }, sub: { min: 1, max: 9 } };
+  }
+  function loadSettings() {
+    var s = defaults();
+    try {
+      var o = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (o) Object.keys(s).forEach(function(k) {
+        if (o[k] && typeof o[k].min === 'number' && typeof o[k].max === 'number' && o[k].min <= o[k].max) {
+          s[k].min = o[k].min; s[k].max = o[k].max;
+          if (s[k].banned) s[k].banned = Array.isArray(o[k].banned) ? o[k].banned : [];
+        }
+      });
+    } catch (e) {}
+    return s;
+  }
+  function saveSettings() { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} }
+  var settings = loadSettings();
+
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function allowed(cfg) {
+    var r = [];
+    for (var n = cfg.min; n <= cfg.max; n++) { if (cfg.banned.indexOf(n) < 0) r.push(n); }
+    return r.length ? r : [cfg.min];
+  }
+  function pick(cfg) { var a = allowed(cfg); return a[rand(0, a.length - 1)]; }
+  // extra összeadás/kivonás; kivonásnál az eredmény nem lehet negatív
+  function extra(base) {
+    var subHi = Math.min(settings.sub.max, base);
+    if (subHi >= settings.sub.min && Math.random() < 0.5) {
+      return { sym: '−', c: rand(settings.sub.min, subHi), sign: -1 };
+    }
+    return { sym: '+', c: rand(settings.add.min, settings.add.max), sign: 1 };
+  }
+  function describe(id) {
+    var c = settings[id];
+    var t = 'Számok: ' + c.min + '–' + c.max;
+    var b = c.banned.filter(function(n) { return n >= c.min && n <= c.max; });
+    if (b.length) t += ' (tiltva: ' + b.join(', ') + ')';
+    if (id === 'multExtra' || id === 'divExtra') {
+      t += ' · +: ' + settings.add.min + '–' + settings.add.max + ' · −: ' + settings.sub.min + '–' + settings.sub.max;
+    }
+    return t;
+  }
+
   // ---------- mode definitions ----------
   var modes = {
     mult: {
-      title: 'Szorzótábla',
-      emoji: '✖️',
-      desc: '1–10-es szorzótábla gyakorlása.',
+      title: 'Szorzótábla', emoji: '✖️', desc: 'Szorzótábla gyakorlása.',
       generate: function() {
-        var a = rand(1, 10), b = rand(1, 10);
+        var a = pick(settings.mult), b = pick(settings.mult);
         return { text: a + ' × ' + b, answer: a * b };
       }
     },
     multExtra: {
-      title: 'Szorzás és egyéb műveletek',
-      emoji: '🧮',
+      title: 'Szorzás és egyéb műveletek', emoji: '🧮',
       desc: 'Szorzás után még egy összeadás vagy kivonás is jön.',
       generate: function() {
-        var a = rand(1, 10), b = rand(1, 10);
-        var product = a * b;
-        var op = Math.random() < 0.5 ? '+' : '-';
-        var c;
-        if (op === '+') {
-          c = rand(1, 9);
-        } else {
-          c = rand(1, Math.min(9, product));
-        }
-        var answer = op === '+' ? product + c : product - c;
-        var sym = op === '+' ? '+' : '−';
-        return { text: a + ' × ' + b + ' ' + sym + ' ' + c, answer: answer };
+        var a = pick(settings.multExtra), b = pick(settings.multExtra);
+        var e = extra(a * b);
+        return { text: a + ' × ' + b + ' ' + e.sym + ' ' + e.c, answer: a * b + e.sign * e.c };
       }
     },
     div: {
-      title: 'Osztás',
-      emoji: '➗',
-      desc: 'A szorzótábla visszafelé, egész számos osztás.',
+      title: 'Osztás', emoji: '➗', desc: 'A szorzótábla visszafelé, egész számos osztás.',
       generate: function() {
-        var d = rand(1, 10), q = rand(1, 10);
-        var dividend = d * q;
-        return { text: dividend + ' ÷ ' + d, answer: q };
+        var d = pick(settings.div), q = pick(settings.div);
+        return { text: (d * q) + ' ÷ ' + d, answer: q };
       }
     },
     divExtra: {
-      title: 'Osztás és egyéb műveletek',
-      emoji: '🔢',
+      title: 'Osztás és egyéb műveletek', emoji: '🔢',
       desc: 'Osztás után még egy összeadás vagy kivonás is jön.',
       generate: function() {
-        var d = rand(1, 10), q = rand(1, 10);
-        var dividend = d * q;
-        var op = Math.random() < 0.5 ? '+' : '-';
-        var c;
-        if (op === '+') {
-          c = rand(1, 9);
-        } else {
-          c = rand(1, Math.min(9, q));
-        }
-        var answer = op === '+' ? q + c : q - c;
-        var sym = op === '+' ? '+' : '−';
-        return { text: dividend + ' ÷ ' + d + ' ' + sym + ' ' + c, answer: answer };
+        var d = pick(settings.divExtra), q = pick(settings.divExtra);
+        var e = extra(q);
+        return { text: (d * q) + ' ÷ ' + d + ' ' + e.sym + ' ' + e.c, answer: q + e.sign * e.c };
       }
     }
   };
-
-  function rand(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
 
   // ---------- state ----------
   var currentModeId = null;
@@ -647,6 +701,10 @@
   var introEmoji = document.getElementById('introEmoji');
   var introTitle = document.getElementById('introTitle');
   var introDesc = document.getElementById('introDesc');
+  var introRange = document.getElementById('introRange');
+  var settingsView = document.getElementById('settingsView');
+  var settingsCard = document.getElementById('settingsCard');
+  var settingsBody = document.getElementById('settingsBody');
 
   var problemText = document.getElementById('problemText');
   var timerVal = document.getElementById('timerVal');
@@ -672,17 +730,19 @@
     introView.classList.add('hidden');
     gameView.classList.add('hidden');
     summaryView.classList.add('hidden');
+    settingsView.classList.add('hidden');
     view.classList.remove('hidden');
   }
 
   // ---------- menu -> intro ----------
-  document.querySelectorAll('.tile').forEach(function(tile) {
+  document.querySelectorAll('.tile[data-mode]').forEach(function(tile) {
     tile.addEventListener('click', function() {
       currentModeId = tile.getAttribute('data-mode');
       var m = modes[currentModeId];
       introEmoji.textContent = m.emoji;
       introTitle.textContent = m.title;
       introDesc.textContent = m.desc;
+      introRange.textContent = describe(currentModeId);
       showView(introView);
     });
   });
@@ -771,7 +831,7 @@
   document.querySelectorAll('.key[data-num]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       if (locked) return;
-      if (currentInput.length >= 3) return;
+      if (currentInput.length >= 4) return;
       currentInput += btn.getAttribute('data-num');
       renderAnswer();
     });
@@ -810,6 +870,82 @@
   // ---------- summary -> menu ----------
   document.getElementById('backToMenuBtn').addEventListener('click', function() {
     showView(menuView);
+  });
+
+  // ---------- settings UI ----------
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function changed() {
+    saveSettings();
+    var y = settingsCard.scrollTop;
+    renderSettings();
+    settingsCard.scrollTop = y;
+  }
+  function stepper(label, cfg, field, lo, hi) {
+    var row = el('div', 'st-row'), box = el('div', 'st-box');
+    var minus = el('button', 'st-btn', '−'), plus = el('button', 'st-btn', '+');
+    row.appendChild(el('span', 'st-label', label));
+    minus.onclick = function() {
+      var low = field === 'min' ? lo : cfg.min;
+      if (cfg[field] - 1 >= low) { cfg[field]--; changed(); }
+    };
+    plus.onclick = function() {
+      var high = field === 'min' ? cfg.max : hi;
+      if (cfg[field] + 1 <= high) { cfg[field]++; changed(); }
+    };
+    box.appendChild(minus); box.appendChild(el('span', 'st-val', String(cfg[field]))); box.appendChild(plus);
+    row.appendChild(box);
+    return row;
+  }
+  var groups = [
+    { key: 'mult', title: '✖️ Szorzótábla', ban: true, lo: 1, hi: 30 },
+    { key: 'multExtra', title: '🧮 Szorzás és egyéb műveletek', ban: true, lo: 1, hi: 30 },
+    { key: 'div', title: '➗ Osztás', ban: true, lo: 1, hi: 30 },
+    { key: 'divExtra', title: '🔢 Osztás és egyéb műveletek', ban: true, lo: 1, hi: 30 },
+    { key: 'add', title: '➕ Hozzáadott összeadás (egyéb műveleteknél)', ban: false, lo: 1, hi: 99 },
+    { key: 'sub', title: '➖ Hozzáadott kivonás (egyéb műveleteknél)', ban: false, lo: 1, hi: 99 }
+  ];
+  function renderSettings() {
+    settingsBody.innerHTML = '';
+    groups.forEach(function(g) {
+      var cfg = settings[g.key], sec = el('div', 'set-sec');
+      sec.appendChild(el('h3', null, g.title));
+      sec.appendChild(stepper(g.ban ? 'Legkisebb szám' : 'Tól', cfg, 'min', g.lo, g.hi));
+      sec.appendChild(stepper(g.ban ? 'Legnagyobb szám' : 'Ig', cfg, 'max', g.lo, g.hi));
+      if (g.ban) {
+        sec.appendChild(el('p', 'hint', 'Tiltott számok – koppints a számra a tiltáshoz / engedélyezéshez:'));
+        var chips = el('div', 'chips');
+        for (var n = cfg.min; n <= cfg.max; n++) {
+          (function(n) {
+            var off = cfg.banned.indexOf(n) >= 0;
+            var c = el('button', 'chip' + (off ? ' off' : ''), String(n));
+            c.onclick = function() {
+              var i = cfg.banned.indexOf(n);
+              if (i >= 0) { cfg.banned.splice(i, 1); changed(); }
+              else if (allowed(cfg).length > 1) { cfg.banned.push(n); changed(); }
+            };
+            chips.appendChild(c);
+          })(n);
+        }
+        sec.appendChild(chips);
+      }
+      settingsBody.appendChild(sec);
+    });
+  }
+  document.getElementById('settingsTile').addEventListener('click', function() {
+    renderSettings();
+    showView(settingsView);
+    settingsCard.scrollTop = 0;
+  });
+  document.getElementById('settingsBackBtn').addEventListener('click', function() { showView(menuView); });
+  document.getElementById('settingsResetBtn').addEventListener('click', function() {
+    if (window.confirm('Visszaállítod az alapbeállításokat?')) {
+      settings = defaults(); saveSettings(); renderSettings();
+    }
   });
 
   showView(menuView);
