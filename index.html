@@ -244,9 +244,9 @@
           <h2 x-show="g.h" class="mt-2 mb-2 text-2xl font-extrabold text-primary" x-text="g.h"></h2>
           <p x-show="g.n" class="mb-2 text-sm text-base-content/60" x-text="g.n"></p>
           <h3 class="mb-2 text-lg font-bold" x-text="g.t"></h3>
-          <template x-for="fl in g.x?['min','max',g.x[0]]:['min','max']" :key="fl">
+          <template x-for="fl in flds(g)" :key="fl">
             <div class="my-2 flex items-center justify-between">
-              <span x-text="g.x&&fl==g.x[0]?g.x[1]:g.ban?(fl=='min'?'Legkisebb szám':'Legnagyobb szám'):(fl=='min'?'Tól':'Ig')"></span>
+              <span x-text="ex(g,fl)?ex(g,fl)[1]:g.ban?(fl=='min'?'Legkisebb szám':'Legnagyobb szám'):(fl=='min'?'Tól':'Ig')"></span>
               <div class="join">
                 <button class="btn btn-primary join-item w-14 text-2xl" @click="step(g,fl,-1)">−</button>
                 <span class="join-item flex w-16 items-center justify-center bg-base-200 text-2xl font-extrabold" x-text="s[g.k][fl]"></span>
@@ -1195,18 +1195,20 @@ lucide.createIcons({icons});\``);if(typeof document>"u")throw new Error("`create
 const KEY='matekGyakorlo.settings.v1';
 const R=()=>({min:2,max:10,banned:[10]});
 const DEF=()=>({mult:R(),multExtra:R(),div:R(),divExtra:R(),add:{min:1,max:9},sub:{min:1,max:9},
-  basic:{min:3,max:99,terms:2},mulA:{min:2,max:9},mulB:{min:4,max:29},dvd:{min:10,max:40},dvs:{min:2,max:40},
+  basic:{min:3,max:99,terms:2},order:{terms:2,maxp:40},mulA:{min:2,max:9},mulB:{min:4,max:29},dvd:{min:10,max:40},dvs:{min:2,max:40},
   table:{min:3,max:99,cols:5},sound:true});
-// Beállítási csoportok: k = kulcs, lo/hi = korlátok, ban = tiltható számok, x = extra mező [név, felirat, min, max]
+// Beállítási csoportok: k = kulcs, lo/hi = korlátok, ban = tiltható számok, nomm = nincs tól–ig,
+// xs = további mezők [név, felirat, min, max, lépésköz]
 const GROUPS=[
   {h:'Szorzás',k:'mult',t:'Szorzótábla',ban:1,lo:1,hi:30},{k:'multExtra',t:'Szorzás és egyéb műveletek',ban:1,lo:1,hi:30},
   {h:'Osztás',k:'div',t:'Osztás',ban:1,lo:1,hi:30},{k:'divExtra',t:'Osztás és egyéb műveletek',ban:1,lo:1,hi:30},
   {k:'add',t:'Hozzáadott összeadás (egyéb műveleteknél)',lo:1,hi:99},{k:'sub',t:'Hozzáadott kivonás (egyéb műveleteknél)',lo:1,hi:99},
-  {h:'Alapműveletek',n:'A műveletek sorrendje és a zárójeles feladatok is ezeket használják.',
-   k:'basic',t:'Összeadás és kivonás',lo:1,hi:99,x:['terms','Tagok száma',2,5]},
+  {h:'Alapműveletek',n:'A számok tartományát a műveletek sorrendje és a zárójeles feladatok is használják.',
+   k:'basic',t:'Összeadás és kivonás',lo:1,hi:99,xs:[['terms','Tagok száma',2,5]]},
+  {k:'order',t:'Műveletek sorrendje és zárójeles feladatok',nomm:1,xs:[['terms','Tagok száma',2,5],['maxp','Legnagyobb szorzat',10,200,5]]},
   {k:'mulA',t:'Szorzás: első szorzótényező',lo:1,hi:30},{k:'mulB',t:'Szorzás: második szorzótényező',lo:1,hi:50},
   {k:'dvd',t:'Osztás: osztandó',lo:1,hi:99},{k:'dvs',t:'Osztás: osztó',lo:1,hi:99},
-  {h:'Táblázatos feladatok',k:'table',t:'Számok a táblázatban',lo:1,hi:99,x:['cols','Oszlopok száma',3,8]}];
+  {h:'Táblázatos feladatok',k:'table',t:'Számok a táblázatban',lo:1,hi:99,xs:[['cols','Oszlopok száma',3,8]]}];
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 const okList=c=>{const r=[];for(let n=c.min;n<=c.max;n++)if(!c.banned.includes(n))r.push(n);return r.length?r:[c.min]};
 const pick=c=>{const a=okList(c);return a[rnd(0,a.length-1)]};
@@ -1219,10 +1221,10 @@ function load(){const s=DEF();let raw=null;try{raw=readCookie()}catch(e){}
   if(!raw)try{raw=localStorage.getItem(KEY)}catch(e){}
   try{const o=JSON.parse(raw||'null');if(o){
     if(typeof o.sound=='boolean')s.sound=o.sound;
-    for(const g of GROUPS){const c=o[g.k],d=s[g.k];
-      if(!c||typeof c.min!='number'||typeof c.max!='number'||c.min>c.max||c.min<g.lo||c.max>g.hi)continue;
-      d.min=c.min;d.max=c.max;if(d.banned)d.banned=Array.isArray(c.banned)?c.banned.filter(n=>typeof n=='number'):[];
-      if(g.x){const[f,,lo,hi]=g.x,v=c[f];if(Number.isInteger(v)&&v>=lo&&v<=hi)d[f]=v}}}}catch(e){}return s}
+    for(const g of GROUPS){const c=o[g.k],d=s[g.k];if(!c)continue;
+      if(!g.nomm){if(typeof c.min!='number'||typeof c.max!='number'||c.min>c.max||c.min<g.lo||c.max>g.hi)continue;
+        d.min=c.min;d.max=c.max;if(d.banned)d.banned=Array.isArray(c.banned)?c.banned.filter(n=>typeof n=='number'):[]}
+      for(const[f,,lo,hi]of g.xs||[]){const v=c[f];if(Number.isInteger(v)&&v>=lo&&v<=hi)d[f]=v}}}}catch(e){}return s}
 function store(s){const v=JSON.stringify(s);let ok=false;
   try{document.cookie=KEY+'='+encodeURIComponent(v)+'; max-age=31536000; path=/; SameSite=Lax';ok=readCookie()===v}catch(e){}
   if(!ok)try{localStorage.setItem(KEY,v)}catch(e){}}
@@ -1238,11 +1240,10 @@ function divPairs(s,lo=s.dvd.min,hi=s.dvd.max){const r=[];
   for(let a=lo;a<=hi;a++)for(let b=Math.max(2,s.dvs.min);b<=s.dvs.max&&b<a;b++)if(a%b==0)r.push([a,b]);return r}
 const any=a=>a.length?a[rnd(0,a.length-1)]:null;
 const num=s=>{const v=inR(s.basic);return{t:''+v,v}};
-// Szorzat legfeljebb 120 lehet (alapműveletek, műveletek sorrendje, zárójeles feladatok)
-const MAXP=120;
+// A szorzat legfeljebb a beállított érték lehet (műveletek sorrendje, zárójeles feladatok; alapból 40)
 function mdTerm(s){const p=Math.random()<.5?any(divPairs(s)):null;
   if(p)return{t:`${p[0]} : ${p[1]}`,v:p[0]/p[1]};
-  const a=inR(s.mulA),hi=Math.min(s.mulB.max,Math.floor(MAXP/a));if(hi<s.mulB.min)return null;const b=rnd(s.mulB.min,hi);return Math.random()<.5?{t:`${a} × ${b}`,v:a*b}:{t:`${b} × ${a}`,v:a*b}}
+  const a=inR(s.mulA),hi=Math.min(s.mulB.max,Math.floor(s.order.maxp/a));if(hi<s.mulB.min)return null;const b=rnd(s.mulB.min,hi);return Math.random()<.5?{t:`${a} × ${b}`,v:a*b}:{t:`${b} × ${a}`,v:a*b}}
 // Tagok összefűzése + és − jelekkel; a "minus" indexű tag elé kötelezően − kerül
 function chain(terms,minus=-1){if(terms.some(x=>!x))return null;let v=terms[0].v,t=terms[0].t;
   for(let i=1;i<terms.length;i++){const x=terms[i],m=i==minus||(v>=x.v&&Math.random()<.5);
@@ -1255,7 +1256,7 @@ function pairFor(s,r){const c=s.basic,o=[],lo=Math.max(c.min,r-c.max),hi=Math.mi
 // Zárójeles tag: (p ± q) × x, x × (p ± q), (p ± q) : d vagy önálló (p ± q), amely elé − kerül
 function parenTerm(s,first){const k=[0,1];if(!first)k.push(2);
   switch(any(k)){
-    case 0:{const x=inR(s.mulA),hi=Math.min(s.mulB.max,Math.floor(MAXP/x));if(x<2||hi<s.mulB.min)return null;
+    case 0:{const x=inR(s.mulA),hi=Math.min(s.mulB.max,Math.floor(s.order.maxp/x));if(x<2||hi<s.mulB.min)return null;
       const r=rnd(s.mulB.min,hi),p=pairFor(s,r);if(!p)return null;
       return Math.random()<.5?{t:`${x} × (${p})`,v:x*r}:{t:`(${p}) × ${x}`,v:x*r}}
     case 1:{const d=any(divPairs(s)),p=d&&pairFor(s,d[0]);if(!p)return null;return{t:`(${p}) : ${d[1]}`,v:d[0]/d[1]}}
@@ -1266,9 +1267,9 @@ function flat(t){const k=t.replace(/[()]/g,'').split(' ');let sum=0,sg=1,pr=+k[0
   return sum+sg*pr}
 const GEN={
   addsub:s=>retry(()=>chain(Array.from({length:s.basic.terms},()=>num(s)))),
-  order:s=>retry(()=>{const n=s.basic.terms,k=rnd(0,n-1);
+  order:s=>retry(()=>{const n=s.order.terms,k=rnd(0,n-1);
     return chain(Array.from({length:n},(_,i)=>i==k||Math.random()<.4?mdTerm(s):num(s)))}),
-  paren:s=>retry(()=>{const n=s.basic.terms,k=rnd(0,n-1),pt=parenTerm(s,k==0);if(!pt)return null;
+  paren:s=>retry(()=>{const n=s.order.terms,k=rnd(0,n-1),pt=parenTerm(s,k==0);if(!pt)return null;
     const c=chain(Array.from({length:n},(_,i)=>i==k?pt:Math.random()<.3?mdTerm(s):num(s)),pt.neg?k:-1);
     return c&&flat(c.t)!==c.v?c:null})};
 
@@ -1322,8 +1323,9 @@ function app(){return{
   get worst(){return Math.max(...this.times)},
   get info(){const s=this.s,m=this.mode,r=c=>`${c.min}–${c.max}`;
     if(m=='table')return`Számok: ${r(s.table)} · Oszlopok: ${s.table.cols}`;
-    if(m=='addsub'||m=='order'||m=='paren'){let t=`Számok: ${r(s.basic)} · Tagok: ${s.basic.terms}`;
-      if(m!='addsub')t+=` · ×: ${r(s.mulA)} és ${r(s.mulB)} · Osztandó: ${r(s.dvd)}, osztó: ${r(s.dvs)}`;return t}
+    if(m=='addsub')return`Számok: ${r(s.basic)} · Tagok: ${s.basic.terms}`;
+    if(m=='order'||m=='paren')return`Számok: ${r(s.basic)} · Tagok: ${s.order.terms} · ×: ${r(s.mulA)} és ${r(s.mulB)}, `+
+      `legfeljebb ${s.order.maxp} · Osztandó: ${r(s.dvd)}, osztó: ${r(s.dvs)}`;
     const c=s[m];if(!c)return'';const b=c.banned.filter(n=>n>=c.min&&n<=c.max);
     let t=`Számok: ${r(c)}`+(b.length?` (tiltva: ${b.join(', ')})`:'');
     if(m.endsWith('Extra'))t+=` · +: ${r(s.add)} · −: ${r(s.sub)}`;return t},
@@ -1376,7 +1378,9 @@ function app(){return{
       {type:'line',label:'Átlag ('+av+' mp)',data:lb.map(()=>av),borderColor:'#f59e0b',borderWidth:3,pointRadius:0}]},
       options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'mp'}},x:{title:{display:true,text:'Feladat'}}}}})},
   range(g){const c=this.s[g.k],r=[];for(let n=c.min;n<=c.max;n++)r.push(n);return r},
-  step(g,fl,d){const c=this.s[g.k],v=c[fl]+d,[lo,hi]=fl=='min'?[g.lo,c.max]:fl=='max'?[c.min,g.hi]:[g.x[2],g.x[3]];
+  flds(g){return[...(g.nomm?[]:['min','max']),...(g.xs||[]).map(x=>x[0])]},
+  ex(g,fl){return(g.xs||[]).find(x=>x[0]==fl)},
+  step(g,fl,d){const c=this.s[g.k],x=this.ex(g,fl),v=c[fl]+d*(x?.[4]||1),[lo,hi]=fl=='min'?[g.lo,c.max]:fl=='max'?[c.min,g.hi]:[x[2],x[3]];
     if(v>=lo&&v<=hi){c[fl]=v;this.save()}},
   tog(g,n){const c=this.s[g.k],i=c.banned.indexOf(n);if(i>=0)c.banned.splice(i,1);else if(okList(c).length>1)c.banned.push(n);this.save()},
   reset(){if(confirm('Visszaállítod az alapbeállításokat?')){this.s=DEF();this.save()}},
