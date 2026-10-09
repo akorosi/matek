@@ -1192,6 +1192,13 @@ lucide.createIcons({icons});\``);if(typeof document>"u")throw new Error("`create
 //# sourceMappingURL=lucide.min.js.map
 </script>
 <script>
+// Használati statisztika (GoatCounter: süti nélküli, nem kell hozzá hozzájárulási ablak).
+// Ide kell beírni a goatcounter.com-on választott kódot (pl. 'matek' → https://matek.goatcounter.com). Üresen nincs mérés.
+const GOATCOUNTER='';
+if(GOATCOUNTER&&location.protocol.startsWith('http')){const sc=document.createElement('script');sc.async=true;
+  sc.dataset.goatcounter=`https://${GOATCOUNTER}.goatcounter.com/count`;sc.src='https://gc.zgo.at/count.js';document.head.appendChild(sc)}
+// Esemény küldése, pl. track('start','mult') → "start/mult". Ha a számláló nem töltődött be, nem csinál semmit.
+function track(e,m){try{window.goatcounter?.count?.({path:m?e+'/'+m:e,title:e,event:true})}catch(x){}}
 const KEY='matekGyakorlo.settings.v1';
 const R=()=>({min:2,max:10,banned:[10]});
 const DEF=()=>({mult:R(),multExtra:R(),div:R(),divExtra:R(),add:{min:1,max:9},sub:{min:1,max:9},
@@ -1333,15 +1340,15 @@ function app(){return{
   open(m){if(m=='table')this.grp=null;this.mode=m;this.view='intro'},
   back(){this.view=this.grp?'sub':'menu'},
   tick(){this.locked=false;this.tEnd=0;this.t0=this.now=performance.now();clearInterval(tm);tm=setInterval(()=>this.now=performance.now(),100)},
-  start(){this.times=[];if(this.mode=='table'){this.view='table';this.nextTable()}else{this.view='game';this.next()}},
+  start(){this.times=[];track('start',this.mode);if(this.mode=='table'){this.view='table';this.nextTable()}else{this.view='game';this.next()}},
   gen(){const p=(GEN[this.mode]&&GEN[this.mode](this.s))||classic(this.s,this.mode in this.s?this.mode:'mult');this.problem=p.t;this.ans=p.v},
   next(){this.gen();this.input='';this.fb='';this.tick()},
   press(k){if(this.locked)return;if(k=='⌫')this.input=this.input.slice(0,-1);else if(k=='✔')this.submit();else if(this.input.length<4)this.input+=k},
   submit(){if(this.locked||!this.input)return;
     if(+this.input===this.ans){this.locked=true;clearInterval(tm);this.tEnd=performance.now();this.times.push((this.tEnd-this.t0)/1000);
-      this.fb='ok';this.snd('ok');confetti({particleCount:50,spread:70,origin:{y:.7}});
+      this.fb='ok';track('solved',this.mode);this.snd('ok');confetti({particleCount:50,spread:70,origin:{y:.7}});
       setTimeout(()=>{if(this.view=='game')this.next()},1000)}
-    else{this.fb='bad';this.snd('bad');this.input='';setTimeout(()=>{if(this.fb=='bad')this.fb=''},600)}},
+    else{this.fb='bad';track('wrong',this.mode);this.snd('bad');this.input='';setTimeout(()=>{if(this.fb=='bad')this.fb=''},600)}},
   nextTable(){this.md=null;this.tb=genTable(this.s);this.tick()},
   touch(){const tb=this.tb;tb.msg='';tb.rok=[null,null,null];tb.cok=tb.cols.map(()=>null)},
   openNum(i){if(!this.tb.done)this.md={k:'num',i,v:this.tb.val[i]}},
@@ -1351,7 +1358,7 @@ function app(){return{
   mpick(x){const m=this.md;this.tb.rules[m.ri][m.j]=x;this.md=null;this.touch()},
   reveal(){const tb=this.tb;if(tb.done)return;tb.val=tb.cols.map((c,i)=>tb.hide[i]<0?'':''+c[tb.hide[i]]);this.touch();
     tb.shown=tb.done=true;this.locked=true;clearInterval(tm);this.tEnd=performance.now();
-    tb.msg='Ez a megoldás. Ez a feladat nem számít bele az eredménybe.';this.showNext()},
+    track('megoldas',this.mode);tb.msg='Ez a megoldás. Ez a feladat nem számít bele az eredménybe.';this.showNext()},
   check(){const tb=this.tb;
     if(tb.val.some((v,i)=>tb.hide[i]>=0&&v==='')){tb.msg='Írd be az összes hiányzó számot!';this.snd('bad');return}
     // A szabályokat a táblázat valódi számain ellenőrizzük, így egy rossz szám nem teszi pirossá a jó szabályt.
@@ -1361,15 +1368,15 @@ function app(){return{
     const nok=tb.cok.every(x=>x!==false),rok=tb.rok.every(x=>x),diff=new Set(tb.rules.map(r=>r.join())).size==3;
     if(nok&&rok&&diff){
       tb.done=true;this.locked=true;clearInterval(tm);this.tEnd=performance.now();this.times.push((this.tEnd-this.t0)/1000);
-      tb.msg='Szuper! Minden szám és szabály jó!';this.snd('ok');confetti({particleCount:80,spread:80,origin:{y:.7}});this.showNext();return}
-    this.snd('bad');const m=[];
+      track('solved',this.mode);tb.msg='Szuper! Minden szám és szabály jó!';this.snd('ok');confetti({particleCount:80,spread:80,origin:{y:.7}});this.showNext();return}
+    track('wrong',this.mode);this.snd('bad');const m=[];
     if(!nok)m.push('Van rossz szám, számold újra a pirosakat!');
     if(tb.rules.some(r=>!ruleOk(r)))m.push('Töltsd ki mindhárom szabályt! Mindegyikben legyen egy = jel és mindhárom forma.');
     else if(!rok)m.push('A piros szabály nem igaz a táblázatra.');
     else if(!diff)m.push('Ugyanazt a szabályt ne írd le kétszer! Írj három különböző szabályt.');
     tb.msg=m.join(' ')},
   showNext(){this.$nextTick(()=>this.$refs.nextBtn?.scrollIntoView({block:'nearest',behavior:'smooth'}))},
-  finish(){clearInterval(tm);this.md=null;this.locked=true;this.view='summary';
+  finish(){clearInterval(tm);track('finish',this.mode);this.md=null;this.locked=true;this.view='summary';
     if(this.times.length){this.snd('win');confetti({particleCount:160,spread:100,origin:{y:.5}})}
     this.$nextTick(()=>this.draw())},
   draw(){if(chart){chart.destroy();chart=null}if(!this.times.length)return;
