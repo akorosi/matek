@@ -18,6 +18,25 @@
   .tile small{opacity:.9;font-size:clamp(11px,1.5vw,14px);text-align:center}
   .pop{animation:pop .3s ease}
   @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+  input,textarea{-webkit-user-select:text;user-select:text}
+  .tiles{display:grid;gap:16px;min-height:0;flex:1;grid-auto-rows:1fr}
+  .shp{display:inline-flex;vertical-align:middle}
+  .tcard>*{flex-shrink:0}
+  .tbw{overflow-x:auto;padding-bottom:4px}
+  .tb{border-collapse:separate;border-spacing:6px;margin:0 auto}
+  .tb th{padding:0 4px}
+  .tb td{min-width:52px;height:52px;text-align:center;font-size:24px;font-weight:800;border-radius:12px;background:var(--color-base-200)}
+  .cell{width:100%;height:52px;border-radius:12px;border:3px dashed var(--color-base-300);background:var(--color-base-100);font-size:24px;font-weight:800;color:var(--color-primary)}
+  .cell.sel{border-style:solid;border-color:var(--color-primary)}
+  .cell.ok{border-style:solid;border-color:var(--color-success);color:var(--color-success)}
+  .cell.bad{border-style:solid;border-color:var(--color-error);color:var(--color-error)}
+  .rule{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px;border-radius:16px;border:3px solid transparent}
+  .rule.ok{border-color:var(--color-success)}
+  .rule.bad{border-color:var(--color-error)}
+  .slot{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--color-base-200);font-size:28px;font-weight:800}
+  .slot.op{background:var(--color-base-300)}
+  .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:24rem;margin:0 auto}
+  .msg{text-align:center;font-weight:700;min-height:1.5em}
 </style>
 </head>
 <body>
@@ -27,22 +46,51 @@
   <section x-show="view=='menu'" x-cloak class="flex min-h-0 flex-1 flex-col gap-3">
     <h1 class="py-1 text-center text-3xl font-extrabold text-white">Matek Gyakorló</h1>
     <div class="grid min-h-0 flex-1 grid-cols-2 gap-4" style="grid-template-rows:1fr 1fr auto">
-      <button class="tile" style="background:linear-gradient(135deg,#ff9966,#ff5e62)" @click="open('mult')">
-        <i data-lucide="x" class="size-14" stroke-width="3"></i><b>Szorzótábla</b><small>Szorzás gyakorlása</small></button>
-      <button class="tile" style="background:linear-gradient(135deg,#36d1dc,#5b86e5)" @click="open('multExtra')">
-        <i data-lucide="calculator" class="size-14"></i><b>Szorzás és egyéb műveletek</b><small>Szorzás + összeadás vagy kivonás</small></button>
-      <button class="tile" style="background:linear-gradient(135deg,#a770ef,#cf8bf3)" @click="open('div')">
-        <i data-lucide="divide" class="size-14" stroke-width="3"></i><b>Osztás</b><small>A szorzótábla visszafelé</small></button>
-      <button class="tile" style="background:linear-gradient(135deg,#43cea2,#185a9d)" @click="open('divExtra')">
-        <i data-lucide="diff" class="size-14"></i><b>Osztás és egyéb műveletek</b><small>Osztás + összeadás vagy kivonás</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#ff9966,#ff5e62)" @click="openSub('mul')">
+        <i data-lucide="x" class="size-14" stroke-width="3"></i><b>Szorzás</b><small>Szorzótábla és egyéb műveletek</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#a770ef,#cf8bf3)" @click="openSub('div')">
+        <i data-lucide="divide" class="size-14" stroke-width="3"></i><b>Osztás</b><small>Osztás és egyéb műveletek</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#36d1dc,#5b86e5)" @click="openSub('basic')">
+        <i data-lucide="calculator" class="size-14"></i><b>Alapműveletek</b><small>Összeadás, kivonás, műveletek sorrendje</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#43cea2,#185a9d)" @click="open('table')">
+        <i data-lucide="grid-3x3" class="size-14"></i><b>Táblázatos feladatok</b><small>Találd ki a szabályt!</small></button>
       <button class="tile" style="flex-direction:row;grid-column:1/-1;background:linear-gradient(135deg,#606c88,#3f4c6b)" @click="view='settings'">
         <i data-lucide="settings" class="size-8"></i><b>Beállítások</b></button>
     </div>
   </section>
 
+  <!-- ALMENÜ -->
+  <section x-show="view=='sub'" x-cloak class="flex min-h-0 flex-1 flex-col gap-3">
+    <div class="flex items-center justify-between text-white">
+      <button class="btn btn-ghost text-white" @click="view='menu'"><i data-lucide="arrow-left" class="size-5"></i>Vissza</button>
+      <h1 class="text-2xl font-extrabold" x-text="{mul:'Szorzás',div:'Osztás',basic:'Alapműveletek'}[grp]"></h1>
+      <span class="w-14"></span>
+    </div>
+    <div class="tiles" x-show="grp=='mul'">
+      <button class="tile" style="background:linear-gradient(135deg,#ff9966,#ff5e62)" @click="open('mult')">
+        <i data-lucide="x" class="size-14" stroke-width="3"></i><b>Szorzótábla</b><small>Szorzás gyakorlása</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#f7971e,#ffd200)" @click="open('multExtra')">
+        <i data-lucide="calculator" class="size-14"></i><b>Szorzás és egyéb műveletek</b><small>Szorzás + összeadás vagy kivonás</small></button>
+    </div>
+    <div class="tiles" x-show="grp=='div'">
+      <button class="tile" style="background:linear-gradient(135deg,#a770ef,#cf8bf3)" @click="open('div')">
+        <i data-lucide="divide" class="size-14" stroke-width="3"></i><b>Osztás</b><small>A szorzótábla visszafelé</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#8e2de2,#4a00e0)" @click="open('divExtra')">
+        <i data-lucide="diff" class="size-14"></i><b>Osztás és egyéb műveletek</b><small>Osztás + összeadás vagy kivonás</small></button>
+    </div>
+    <div class="tiles" x-show="grp=='basic'">
+      <button class="tile" style="background:linear-gradient(135deg,#36d1dc,#5b86e5)" @click="open('addsub')">
+        <i data-lucide="diff" class="size-14"></i><b>Összeadás és kivonás</b><small>Például: 67 + 15 = ?</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#11998e,#38ef7d)" @click="open('order')">
+        <i data-lucide="list-ordered" class="size-14"></i><b>Műveletek sorrendje</b><small>Például: 18 + 21 : 3 = ?</small></button>
+      <button class="tile" style="background:linear-gradient(135deg,#ee0979,#ff6a00)" @click="open('paren')">
+        <i data-lucide="parentheses" class="size-14"></i><b>Zárójeles feladatok</b><small>Például: (12 + 8) : 4 = ?</small></button>
+    </div>
+  </section>
+
   <!-- KEZDÉS -->
   <section x-show="view=='intro'" x-cloak class="flex min-h-0 flex-1 flex-col gap-3">
-    <div><button class="btn btn-ghost text-white" @click="view='menu'"><i data-lucide="arrow-left" class="size-5"></i>Vissza</button></div>
+    <div><button class="btn btn-ghost text-white" @click="back()"><i data-lucide="arrow-left" class="size-5"></i>Vissza</button></div>
     <div class="card flex-1 items-center justify-center gap-4 bg-base-100 p-6 text-center shadow-2xl">
       <i data-lucide="circle-play" class="size-24 text-primary"></i>
       <h2 class="text-3xl font-extrabold" x-text="T[mode]?.[0]"></h2>
@@ -62,7 +110,7 @@
       <button class="btn btn-error" @click="finish()"><i data-lucide="flag" class="size-5"></i>Befejezés</button>
     </div>
     <div class="card relative min-h-0 flex-1 items-center gap-2 overflow-hidden bg-base-100 p-4 shadow-2xl">
-      <div class="mt-2 text-center font-extrabold" style="font-size:clamp(38px,7vh,80px)" x-text="problem+' = ?'"></div>
+      <div class="mt-2 text-center font-extrabold" :style="'font-size:'+psize" x-text="problem+' = ?'"></div>
       <div class="font-semibold text-primary" x-text="f(el)"></div>
       <div class="flex min-w-40 items-center justify-center rounded-2xl border-4 bg-base-200 px-6 font-bold"
            :class="input?'border-primary':'border-base-300'" style="min-height:clamp(46px,7vh,64px);font-size:clamp(28px,4.5vh,44px)" x-text="input"></div>
@@ -76,6 +124,51 @@
         <div x-show="fb=='ok'" class="pop"><i data-lucide="circle-check" class="size-48 text-success" stroke-width="2.5"></i></div>
         <div x-show="fb=='bad'" class="pop"><i data-lucide="circle-x" class="size-48 text-error" stroke-width="2.5"></i></div>
       </div>
+    </div>
+  </section>
+
+  <!-- TÁBLÁZATOS FELADAT -->
+  <section x-show="view=='table'" x-cloak class="flex min-h-0 flex-1 flex-col gap-3">
+    <div class="flex items-center justify-between text-white">
+      <div class="flex gap-2">
+        <div class="badge badge-lg border-0 bg-white/15 py-4 text-white">Kész: <b x-text="times.length"></b></div>
+        <div class="badge badge-lg border-0 bg-white/15 py-4 text-white"><b x-text="f(el)"></b></div>
+      </div>
+      <button class="btn btn-error" @click="finish()"><i data-lucide="flag" class="size-5"></i>Befejezés</button>
+    </div>
+    <div class="card tcard min-h-0 flex-1 gap-3 overflow-y-auto bg-base-100 p-4 shadow-2xl">
+      <p class="text-center text-lg font-bold">Találd ki a hiányzó számokat és a szabályt!</p>
+      <div class="tbw"><table class="tb">
+        <template x-for="r in [0,1,2]" :key="r">
+          <tr>
+            <th x-html="shape(r,36)"></th>
+            <template x-for="(c,i) in tb.cols" :key="i">
+              <td>
+                <span x-show="tb.hide[i]!==r" x-text="c[r]"></span>
+                <button x-show="tb.hide[i]===r" class="cell" @click="tb.sel=i"
+                        :class="tb.cok[i]===true?'ok':tb.cok[i]===false?'bad':tb.sel===i&&!tb.done?'sel':''" x-text="tb.val[i]===''?'?':tb.val[i]"></button>
+              </td>
+            </template>
+          </tr>
+        </template>
+      </table></div>
+      <p class="text-center text-sm text-base-content/70">Írj fel három szabályt! Koppints a mezőkre, hogy formát vagy műveletet válassz.</p>
+      <template x-for="(ru,ri) in tb.rules" :key="ri">
+        <div class="rule" :class="tb.rok[ri]===true?'ok':tb.rok[ri]===false?'bad':''">
+          <template x-for="j in [0,1,2,3,4]" :key="j">
+            <button class="slot" :class="j%2?'op':''" @click="cyc(ri,j)" x-html="ru[j]==null?'?':j%2?ru[j]:shape(ru[j],32)"></button>
+          </template>
+        </div>
+      </template>
+      <p class="msg" :class="tb.done?'text-success':'text-error'" x-text="tb.msg"></p>
+      <div class="kp" x-show="!tb.done">
+        <template x-for="k in [1,2,3,4,5,6,7,8,9,'⌫',0,'▶']" :key="k">
+          <button class="btn text-2xl" style="height:clamp(42px,6vh,60px)"
+                  :class="k=='⌫'?'btn-warning':k=='▶'?'btn-primary':'btn-neutral btn-soft'" @click="tpress(k)" x-text="k"></button>
+        </template>
+      </div>
+      <button x-show="!tb.done" class="btn btn-success btn-lg mx-auto px-16 text-2xl" @click="check()">Ellenőrzés</button>
+      <button x-show="tb.done" class="btn btn-primary btn-lg mx-auto text-2xl" style="padding-inline:2rem" @click="nextTable()">Következő feladat</button>
     </div>
   </section>
 
@@ -110,10 +203,12 @@
       </label>
       <template x-for="g in groups" :key="g.k">
         <div class="mb-4 border-b-2 border-base-200 pb-4">
+          <h2 x-show="g.h" class="mt-2 mb-2 text-2xl font-extrabold text-primary" x-text="g.h"></h2>
+          <p x-show="g.n" class="mb-2 text-sm text-base-content/60" x-text="g.n"></p>
           <h3 class="mb-2 text-lg font-bold" x-text="g.t"></h3>
-          <template x-for="fl in ['min','max']" :key="fl">
+          <template x-for="fl in g.x?['min','max',g.x[0]]:['min','max']" :key="fl">
             <div class="my-2 flex items-center justify-between">
-              <span x-text="g.ban?(fl=='min'?'Legkisebb szám':'Legnagyobb szám'):(fl=='min'?'Tól':'Ig')"></span>
+              <span x-text="g.x&&fl==g.x[0]?g.x[1]:g.ban?(fl=='min'?'Legkisebb szám':'Legnagyobb szám'):(fl=='min'?'Tól':'Ig')"></span>
               <div class="join">
                 <button class="btn btn-primary join-item w-14 text-2xl" @click="step(g,fl,-1)">−</button>
                 <span class="join-item flex w-16 items-center justify-center bg-base-200 text-2xl font-extrabold" x-text="s[g.k][fl]"></span>
@@ -121,15 +216,17 @@
               </div>
             </div>
           </template>
-          <div x-show="g.ban">
-            <p class="mt-3 text-sm text-base-content/60">Tiltott számok – koppints a számra a tiltáshoz / engedélyezéshez:</p>
-            <div class="mt-2 flex flex-wrap gap-2">
-              <template x-for="n in range(g)" :key="n">
-                <button class="btn min-w-12 text-lg" :class="s[g.k].banned.includes(n)?'btn-error line-through':'btn-neutral btn-soft'"
-                        @click="tog(g,n)" x-text="n"></button>
-              </template>
+          <template x-if="g.ban">
+            <div>
+              <p class="mt-3 text-sm text-base-content/60">Tiltott számok – koppints a számra a tiltáshoz / engedélyezéshez:</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <template x-for="n in range(g)" :key="n">
+                  <button class="btn min-w-12 text-lg" :class="s[g.k].banned.includes(n)?'btn-error line-through':'btn-neutral btn-soft'"
+                          @click="tog(g,n)" x-text="n"></button>
+                </template>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
       </template>
     </div>
@@ -1059,14 +1156,99 @@ lucide.createIcons({icons});\``);if(typeof document>"u")throw new Error("`create
 <script>
 const KEY='matekGyakorlo.settings.v1';
 const R=()=>({min:2,max:10,banned:[10]});
-const DEF=()=>({mult:R(),multExtra:R(),div:R(),divExtra:R(),add:{min:1,max:9},sub:{min:1,max:9},sound:true});
+const DEF=()=>({mult:R(),multExtra:R(),div:R(),divExtra:R(),add:{min:1,max:9},sub:{min:1,max:9},
+  basic:{min:3,max:99,terms:2},mulA:{min:2,max:9},mulB:{min:4,max:29},dvd:{min:10,max:40},dvs:{min:2,max:40},
+  table:{min:3,max:99,cols:5},sound:true});
+// Beállítási csoportok: k = kulcs, lo/hi = korlátok, ban = tiltható számok, x = extra mező [név, felirat, min, max]
+const GROUPS=[
+  {h:'Szorzás',k:'mult',t:'Szorzótábla',ban:1,lo:1,hi:30},{k:'multExtra',t:'Szorzás és egyéb műveletek',ban:1,lo:1,hi:30},
+  {h:'Osztás',k:'div',t:'Osztás',ban:1,lo:1,hi:30},{k:'divExtra',t:'Osztás és egyéb műveletek',ban:1,lo:1,hi:30},
+  {k:'add',t:'Hozzáadott összeadás (egyéb műveleteknél)',lo:1,hi:99},{k:'sub',t:'Hozzáadott kivonás (egyéb műveleteknél)',lo:1,hi:99},
+  {h:'Alapműveletek',n:'A műveletek sorrendje és a zárójeles feladatok is ezeket használják.',
+   k:'basic',t:'Összeadás és kivonás',lo:1,hi:99,x:['terms','Tagok száma',2,5]},
+  {k:'mulA',t:'Szorzás: első szorzótényező',lo:1,hi:30},{k:'mulB',t:'Szorzás: második szorzótényező',lo:1,hi:50},
+  {k:'dvd',t:'Osztás: osztandó',lo:1,hi:99},{k:'dvs',t:'Osztás: osztó',lo:1,hi:99},
+  {h:'Táblázatos feladatok',k:'table',t:'Számok a táblázatban',lo:1,hi:99,x:['cols','Oszlopok száma',3,8]}];
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 const okList=c=>{const r=[];for(let n=c.min;n<=c.max;n++)if(!c.banned.includes(n))r.push(n);return r.length?r:[c.min]};
 const pick=c=>{const a=okList(c);return a[rnd(0,a.length-1)]};
-function load(){const s=DEF();try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o){
-  if(typeof o.sound=='boolean')s.sound=o.sound;
-  for(const k in s){const c=o[k];if(k!='sound'&&c&&typeof c.min=='number'&&typeof c.max=='number'&&c.min<=c.max){
-    s[k].min=c.min;s[k].max=c.max;if(s[k].banned)s[k].banned=Array.isArray(c.banned)?c.banned:[]}}}}catch(e){}return s}
+const inR=c=>rnd(c.min,c.max);
+const retry=(f,n=300)=>{for(let i=0;i<n;i++){const r=f();if(r)return r}return null};
+
+// Beállítások mentése sütibe (ha a böngésző nem enged sütit, pl. helyi fájlnál, akkor localStorage-ba)
+function readCookie(){const m=document.cookie.match(new RegExp('(?:^|; )'+KEY.replace(/\./g,'\\.')+'=([^;]*)'));return m?decodeURIComponent(m[1]):null}
+function load(){const s=DEF();let raw=null;try{raw=readCookie()}catch(e){}
+  if(!raw)try{raw=localStorage.getItem(KEY)}catch(e){}
+  try{const o=JSON.parse(raw||'null');if(o){
+    if(typeof o.sound=='boolean')s.sound=o.sound;
+    for(const g of GROUPS){const c=o[g.k],d=s[g.k];
+      if(!c||typeof c.min!='number'||typeof c.max!='number'||c.min>c.max||c.min<g.lo||c.max>g.hi)continue;
+      d.min=c.min;d.max=c.max;if(d.banned)d.banned=Array.isArray(c.banned)?c.banned.filter(n=>typeof n=='number'):[];
+      if(g.x){const[f,,lo,hi]=g.x,v=c[f];if(Number.isInteger(v)&&v>=lo&&v<=hi)d[f]=v}}}}catch(e){}return s}
+function store(s){const v=JSON.stringify(s);let ok=false;
+  try{document.cookie=KEY+'='+encodeURIComponent(v)+'; max-age=31536000; path=/; SameSite=Lax';ok=readCookie()===v}catch(e){}
+  if(!ok)try{localStorage.setItem(KEY,v)}catch(e){}}
+
+// Feladatgenerálás. Egy tag: {t: szöveg, v: érték}. Részeredmény és végeredmény sosem negatív.
+function classic(s,m){const c=s[m],a=pick(c),b=pick(c),mul=m.startsWith('mult'),base=mul?a*b:b;
+  let t=mul?`${a} × ${b}`:`${a*b} ÷ ${a}`,v=base;
+  if(m.endsWith('Extra')){const hi=Math.min(s.sub.max,base);let sign=1,x;
+    if(hi>=s.sub.min&&Math.random()<.5){sign=-1;x=rnd(s.sub.min,hi)}else x=rnd(s.add.min,s.add.max);
+    t+=` ${sign<0?'−':'+'} ${x}`;v=base+sign*x}
+  return{t,v}}
+function divPairs(s,lo=s.dvd.min,hi=s.dvd.max){const r=[];
+  for(let a=lo;a<=hi;a++)for(let b=Math.max(2,s.dvs.min);b<=s.dvs.max&&b<a;b++)if(a%b==0)r.push([a,b]);return r}
+const any=a=>a.length?a[rnd(0,a.length-1)]:null;
+const num=s=>{const v=inR(s.basic);return{t:''+v,v}};
+function mdTerm(s){const p=Math.random()<.5?any(divPairs(s)):null;
+  if(p)return{t:`${p[0]} : ${p[1]}`,v:p[0]/p[1]};
+  const a=inR(s.mulA),b=inR(s.mulB);return Math.random()<.5?{t:`${a} × ${b}`,v:a*b}:{t:`${b} × ${a}`,v:a*b}}
+// Tagok összefűzése + és − jelekkel; a "minus" indexű tag elé kötelezően − kerül
+function chain(terms,minus=-1){let v=terms[0].v,t=terms[0].t;
+  for(let i=1;i<terms.length;i++){const x=terms[i],m=i==minus||(v>=x.v&&Math.random()<.5);
+    if(m&&v<x.v)return null;v+=m?-x.v:x.v;t+=` ${m?'−':'+'} ${x.t}`}return{t,v}}
+// Két szám (p + q vagy p − q) az alapműveletek tartományából, amelynek eredménye r
+function pairFor(s,r){const c=s.basic,o=[],lo=Math.max(c.min,r-c.max),hi=Math.min(c.max,r-c.min),hq=c.max-r;
+  if(lo<=hi)o.push(()=>{const p=rnd(lo,hi);return`${p} + ${r-p}`});
+  if(r>=1&&c.min<=hq)o.push(()=>{const q=rnd(c.min,hq);return`${q+r} − ${q}`});
+  return o.length?any(o)():null}
+// Zárójeles tag: (p ± q) × x, x × (p ± q), (p ± q) : d vagy önálló (p ± q), amely elé − kerül
+function parenTerm(s,first){const k=[0,1];if(!first)k.push(2);
+  switch(any(k)){
+    case 0:{const x=inR(s.mulA),r=inR(s.mulB),p=pairFor(s,r);if(x<2||!p)return null;
+      return Math.random()<.5?{t:`${x} × (${p})`,v:x*r}:{t:`(${p}) × ${x}`,v:x*r}}
+    case 1:{const d=any(divPairs(s)),p=d&&pairFor(s,d[0]);if(!p)return null;return{t:`(${p}) : ${d[1]}`,v:d[0]/d[1]}}
+    case 2:{const r=inR(s.basic),p=pairFor(s,r);if(!p)return null;return{t:`(${p})`,v:r,neg:1}}}}
+// A kifejezés értéke zárójelek nélkül (a zárójeleknek mindig változtatniuk kell az eredményen)
+function flat(t){const k=t.replace(/[()]/g,'').split(' ');let sum=0,sg=1,pr=+k[0];
+  for(let i=1;i<k.length;i+=2){const o=k[i],n=+k[i+1];if(o=='×')pr*=n;else if(o==':')pr/=n;else{sum+=sg*pr;sg=o=='+'?1:-1;pr=n}}
+  return sum+sg*pr}
+const GEN={
+  addsub:s=>retry(()=>chain(Array.from({length:s.basic.terms},()=>num(s)))),
+  order:s=>retry(()=>{const n=s.basic.terms,k=rnd(0,n-1);
+    return chain(Array.from({length:n},(_,i)=>i==k||Math.random()<.4?mdTerm(s):num(s)))}),
+  paren:s=>retry(()=>{const n=s.basic.terms,k=rnd(0,n-1),pt=parenTerm(s,k==0);if(!pt)return null;
+    const c=chain(Array.from({length:n},(_,i)=>i==k?pt:Math.random()<.3?mdTerm(s):num(s)),pt.neg?k:-1);
+    return c&&flat(c.t)!==c.v?c:null})};
+
+// Táblázatos feladat: 3 sor (▲ ● ■), oszloponként egy szám rejtve, végig ugyanaz a szabály (X + Y = Z vagy X × Y = Z)
+const SHN=['háromszög','kör','négyzet'],SHC=['#f97316','#3b82f6','#22c55e'];
+const SHP=['<path d="M12 2 23 21H1Z"/>','<circle cx="12" cy="12" r="10.5"/>','<rect x="2" y="2" width="20" height="20" rx="3"/>'];
+const shape=(i,z=28)=>`<svg class="shp" width="${z}" height="${z}" viewBox="0 0 24 24" fill="${SHC[i]}" role="img" aria-label="${SHN[i]}">${SHP[i]}</svg>`;
+function genTable(s){let{min,max,cols:n}=s.table;const ops=[],ml=Math.max(2,min);
+  if(max>=2*min)ops.push('+');if(ml*ml<=max)ops.push('×');if(!ops.length){min=3;max=99;ops.push('+')}
+  const op=any(ops),o=[0,1,2].sort(()=>Math.random()-.5),cols=[];
+  for(let i=0;cols.length<n&&i<1000;i++){let x,y,z;
+    if(op=='+'){x=rnd(min,max-min);y=rnd(min,max-x);z=x+y}else{x=rnd(ml,Math.floor(max/ml));y=rnd(ml,Math.floor(max/x));z=x*y}
+    if(z<min)continue;const c=[];c[o[0]]=x;c[o[1]]=y;c[o[2]]=z;if(!cols.some(k=>k.join()==c.join()))cols.push(c)}
+  return{cols,hide:cols.map(()=>rnd(0,2)),val:cols.map(()=>''),sel:0,rules:[0,1,2].map(()=>[null,null,null,'=',null]),
+    rok:[null,null,null],cok:cols.map(()=>null),msg:'',done:false}}
+// Szabály: [forma, művelet, forma, művelet, forma], pontosan egy "=" jellel
+const OPS=['+','−','×','÷','='];
+const ruleOk=r=>r.every(x=>x!=null)&&(r[1]=='=')+(r[3]=='=')==1&&new Set([r[0],r[2],r[4]]).size==3;
+const calc=(a,o,b)=>o=='+'?a+b:o=='−'?a-b:o=='×'?a*b:b&&a%b==0?a/b:NaN;
+const holds=(r,c)=>r[3]=='='?calc(c[r[0]],r[1],c[r[2]])===c[r[4]]:c[r[0]]===calc(c[r[2]],r[3],c[r[4]]);
+const iso=r=>r[3]=='='?r[4]:r[0];
 
 // Hangok: Howler + a böngészőben generált WAV (nincs szükség hangfájlokra)
 function wav(notes){const sr=22050,d=[];notes.forEach(([f,ms])=>{const n=sr*ms/1000|0;for(let i=0;i<n;i++)d.push(Math.sin(2*Math.PI*f*i/sr)*Math.min(1,i/200,(n-i)/400)*16000)});
@@ -1079,38 +1261,65 @@ const sounds={ok:mk([[660,90],[880,150]]),bad:mk([[220,140],[160,240]]),win:mk([
 let tm=null,chart=null;
 
 function app(){return{
-  view:'menu',mode:null,s:load(),problem:'',ans:0,input:'',t0:0,now:0,tEnd:0,times:[],locked:false,fb:'',
+  view:'menu',grp:null,mode:null,s:load(),problem:'',ans:0,input:'',t0:0,now:0,tEnd:0,times:[],locked:false,fb:'',tb:genTable(DEF()),
   T:{mult:['Szorzótábla','Szorzótábla gyakorlása.'],multExtra:['Szorzás és egyéb műveletek','Szorzás után még egy összeadás vagy kivonás is jön.'],
-     div:['Osztás','A szorzótábla visszafelé, egész számos osztás.'],divExtra:['Osztás és egyéb műveletek','Osztás után még egy összeadás vagy kivonás is jön.']},
-  groups:[{k:'mult',t:'Szorzótábla',ban:1,lo:1,hi:30},{k:'multExtra',t:'Szorzás és egyéb műveletek',ban:1,lo:1,hi:30},
-          {k:'div',t:'Osztás',ban:1,lo:1,hi:30},{k:'divExtra',t:'Osztás és egyéb műveletek',ban:1,lo:1,hi:30},
-          {k:'add',t:'Hozzáadott összeadás (egyéb műveleteknél)',ban:0,lo:1,hi:99},{k:'sub',t:'Hozzáadott kivonás (egyéb műveleteknél)',ban:0,lo:1,hi:99}],
+     div:['Osztás','A szorzótábla visszafelé, egész számos osztás.'],divExtra:['Osztás és egyéb műveletek','Osztás után még egy összeadás vagy kivonás is jön.'],
+     addsub:['Összeadás és kivonás','Adj össze és vonj ki! Például: 67 + 15 = ?'],
+     order:['Műveletek sorrendje','Először szorozz és ossz, utána adj össze és vonj ki! Például: 18 + 21 : 3 = ?'],
+     paren:['Zárójeles feladatok','Ami zárójelben van, azt számold ki először! Például: (12 + 8) : 4 = ?'],
+     table:['Táblázatos feladatok','Minden oszlopban ugyanaz a szabály. Találd ki a hiányzó számokat, és írj fel három szabályt!']},
+  groups:GROUPS,
   init(){this.$nextTick(()=>lucide.createIcons())},
   f(x){return x.toFixed(1)+' s'},
+  shape,
   snd(k){if(this.s.sound)sounds[k].play()},
+  get psize(){const n=this.problem.length+4;return`clamp(22px,min(7vh,${140/n}vw,${1100/n}px),80px)`},
   get el(){return((this.locked&&this.tEnd?this.tEnd:this.now)-this.t0)/1000},
   get avg(){return this.times.reduce((a,b)=>a+b,0)/(this.times.length||1)},
   get best(){return Math.min(...this.times)},
   get worst(){return Math.max(...this.times)},
-  get info(){const c=this.s[this.mode];if(!c)return'';const b=c.banned.filter(n=>n>=c.min&&n<=c.max);
-    let t=`Számok: ${c.min}–${c.max}`+(b.length?` (tiltva: ${b.join(', ')})`:'');
-    if(this.mode.endsWith('Extra'))t+=` · +: ${this.s.add.min}–${this.s.add.max} · −: ${this.s.sub.min}–${this.s.sub.max}`;return t},
-  open(m){this.mode=m;this.view='intro'},
-  start(){this.times=[];this.view='game';this.next()},
-  gen(){const s=this.s,m=this.mode,c=s[m],a=pick(c),b=pick(c),mul=m.startsWith('mult'),base=mul?a*b:b;
-    let text=mul?`${a} × ${b}`:`${a*b} ÷ ${a}`,ans=base;
-    if(m.endsWith('Extra')){const hi=Math.min(s.sub.max,base);let sign=1,v;
-      if(hi>=s.sub.min&&Math.random()<.5){sign=-1;v=rnd(s.sub.min,hi)}else v=rnd(s.add.min,s.add.max);
-      text+=` ${sign<0?'−':'+'} ${v}`;ans=base+sign*v}
-    this.problem=text;this.ans=ans},
-  next(){this.gen();this.input='';this.locked=false;this.fb='';this.t0=this.now=performance.now();
-    clearInterval(tm);tm=setInterval(()=>this.now=performance.now(),100)},
+  get info(){const s=this.s,m=this.mode,r=c=>`${c.min}–${c.max}`;
+    if(m=='table')return`Számok: ${r(s.table)} · Oszlopok: ${s.table.cols}`;
+    if(m=='addsub'||m=='order'||m=='paren'){let t=`Számok: ${r(s.basic)} · Tagok: ${s.basic.terms}`;
+      if(m!='addsub')t+=` · ×: ${r(s.mulA)} és ${r(s.mulB)} · Osztandó: ${r(s.dvd)}, osztó: ${r(s.dvs)}`;return t}
+    const c=s[m];if(!c)return'';const b=c.banned.filter(n=>n>=c.min&&n<=c.max);
+    let t=`Számok: ${r(c)}`+(b.length?` (tiltva: ${b.join(', ')})`:'');
+    if(m.endsWith('Extra'))t+=` · +: ${r(s.add)} · −: ${r(s.sub)}`;return t},
+  openSub(g){this.grp=g;this.view='sub'},
+  open(m){if(m=='table')this.grp=null;this.mode=m;this.view='intro'},
+  back(){this.view=this.grp?'sub':'menu'},
+  tick(){this.locked=false;this.tEnd=0;this.t0=this.now=performance.now();clearInterval(tm);tm=setInterval(()=>this.now=performance.now(),100)},
+  start(){this.times=[];if(this.mode=='table'){this.view='table';this.nextTable()}else{this.view='game';this.next()}},
+  gen(){const p=(GEN[this.mode]&&GEN[this.mode](this.s))||classic(this.s,this.mode in this.s?this.mode:'mult');this.problem=p.t;this.ans=p.v},
+  next(){this.gen();this.input='';this.fb='';this.tick()},
   press(k){if(this.locked)return;if(k=='⌫')this.input=this.input.slice(0,-1);else if(k=='✔')this.submit();else if(this.input.length<4)this.input+=k},
   submit(){if(this.locked||!this.input)return;
     if(+this.input===this.ans){this.locked=true;clearInterval(tm);this.tEnd=performance.now();this.times.push((this.tEnd-this.t0)/1000);
       this.fb='ok';this.snd('ok');confetti({particleCount:50,spread:70,origin:{y:.7}});
       setTimeout(()=>{if(this.view=='game')this.next()},1000)}
     else{this.fb='bad';this.snd('bad');this.input='';setTimeout(()=>{if(this.fb=='bad')this.fb=''},600)}},
+  nextTable(){this.tb=genTable(this.s);this.tick()},
+  touch(){const tb=this.tb;tb.msg='';tb.rok=[null,null,null];tb.cok=tb.cols.map(()=>null)},
+  tpress(k){const tb=this.tb;if(tb.done)return;
+    if(k=='▶'){tb.sel=(tb.sel+1)%tb.cols.length;return}
+    const v=tb.val[tb.sel];tb.val[tb.sel]=k=='⌫'?v.slice(0,-1):v.length<3?v+k:v;this.touch()},
+  cyc(ri,j){const tb=this.tb;if(tb.done)return;const r=tb.rules[ri],l=j%2?OPS:[0,1,2],i=l.indexOf(r[j]);
+    r[j]=l[(i+1)%l.length];this.touch()},
+  check(){const tb=this.tb;
+    if(tb.val.some(v=>v==='')){tb.msg='Írd be az összes hiányzó számot!';this.snd('bad');return}
+    const full=tb.cols.map((c,i)=>{const x=c.slice();x[tb.hide[i]]=+tb.val[i];return x}),good=tb.rules.filter(ruleOk);
+    tb.rok=tb.rules.map(r=>ruleOk(r)&&full.every(c=>holds(r,c)));
+    // Más, de minden oszlopra igaz szabály és számok is elfogadhatók
+    tb.cok=full.map((c,i)=>c[tb.hide[i]]===tb.cols[i][tb.hide[i]]||good.length>0&&good.every(r=>holds(r,c)));
+    const diff=new Set(tb.rules.map(iso)).size==3;
+    if(tb.rok.every(x=>x)&&tb.cok.every(x=>x)&&diff){
+      tb.done=true;this.locked=true;clearInterval(tm);this.tEnd=performance.now();this.times.push((this.tEnd-this.t0)/1000);
+      tb.msg='Szuper! Minden szám és szabály jó!';this.snd('ok');confetti({particleCount:80,spread:80,origin:{y:.7}});return}
+    this.snd('bad');
+    tb.msg=tb.rules.some(r=>!ruleOk(r))?'Töltsd ki mindhárom szabályt! Mindegyikben legyen egy = jel és mindhárom forma.'
+      :!tb.cok.every(x=>x)?'Van egy rossz szám. Számold újra a pirosakat!'
+      :!tb.rok.every(x=>x)?'A piros szabály nem igaz minden oszlopra.'
+      :'A három szabály legyen különböző: mindegyikben más forma álljon egyedül az egyik oldalon.'},
   finish(){clearInterval(tm);this.locked=true;this.view='summary';
     if(this.times.length){this.snd('win');confetti({particleCount:160,spread:100,origin:{y:.5}})}
     this.$nextTick(()=>this.draw())},
@@ -1121,10 +1330,11 @@ function app(){return{
       {type:'line',label:'Átlag ('+av+' mp)',data:lb.map(()=>av),borderColor:'#f59e0b',borderWidth:3,pointRadius:0}]},
       options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'mp'}},x:{title:{display:true,text:'Feladat'}}}}})},
   range(g){const c=this.s[g.k],r=[];for(let n=c.min;n<=c.max;n++)r.push(n);return r},
-  step(g,fl,d){const c=this.s[g.k],v=c[fl]+d;if(v>=(fl=='min'?g.lo:c.min)&&v<=(fl=='min'?c.max:g.hi)){c[fl]=v;this.save()}},
+  step(g,fl,d){const c=this.s[g.k],v=c[fl]+d,[lo,hi]=fl=='min'?[g.lo,c.max]:fl=='max'?[c.min,g.hi]:[g.x[2],g.x[3]];
+    if(v>=lo&&v<=hi){c[fl]=v;this.save()}},
   tog(g,n){const c=this.s[g.k],i=c.banned.indexOf(n);if(i>=0)c.banned.splice(i,1);else if(okList(c).length>1)c.banned.push(n);this.save()},
   reset(){if(confirm('Visszaállítod az alapbeállításokat?')){this.s=DEF();this.save()}},
-  save(){try{localStorage.setItem(KEY,JSON.stringify(this.s))}catch(e){}}
+  save(){store(this.s)}
 }}
 </script>
 <script>(()=>{var nt=!1,it=!1,W=[],ot=-1;function Ut(e){Rn(e)}function Rn(e){W.includes(e)||W.push(e),Mn()}function Wt(e){let t=W.indexOf(e);t!==-1&&t>ot&&W.splice(t,1)}function Mn(){!it&&!nt&&(nt=!0,queueMicrotask(Nn))}function Nn(){nt=!1,it=!0;for(let e=0;e<W.length;e++)W[e](),ot=e;W.length=0,ot=-1,it=!1}var T,N,$,at,st=!0;function Gt(e){st=!1,e(),st=!0}function Jt(e){T=e.reactive,$=e.release,N=t=>e.effect(t,{scheduler:r=>{st?Ut(r):r()}}),at=e.raw}function ct(e){N=e}function Yt(e){let t=()=>{};return[n=>{let i=N(n);return e._x_effects||(e._x_effects=new Set,e._x_runEffects=()=>{e._x_effects.forEach(o=>o())}),e._x_effects.add(i),t=()=>{i!==void 0&&(e._x_effects.delete(i),$(i))},i},()=>{t()}]}function ve(e,t){let r=!0,n,i=N(()=>{let o=e();JSON.stringify(o),r?n=o:queueMicrotask(()=>{t(o,n),n=o}),r=!1});return()=>$(i)}var Xt=[],Zt=[],Qt=[];function er(e){Qt.push(e)}function te(e,t){typeof t=="function"?(e._x_cleanups||(e._x_cleanups=[]),e._x_cleanups.push(t)):(t=e,Zt.push(t))}function Ae(e){Xt.push(e)}function Oe(e,t,r){e._x_attributeCleanups||(e._x_attributeCleanups={}),e._x_attributeCleanups[t]||(e._x_attributeCleanups[t]=[]),e._x_attributeCleanups[t].push(r)}function lt(e,t){e._x_attributeCleanups&&Object.entries(e._x_attributeCleanups).forEach(([r,n])=>{(t===void 0||t.includes(r))&&(n.forEach(i=>i()),delete e._x_attributeCleanups[r])})}function tr(e){for(e._x_effects?.forEach(Wt);e._x_cleanups?.length;)e._x_cleanups.pop()()}var ut=new MutationObserver(mt),ft=!1;function ue(){ut.observe(document,{subtree:!0,childList:!0,attributes:!0,attributeOldValue:!0}),ft=!0}function dt(){kn(),ut.disconnect(),ft=!1}var le=[];function kn(){let e=ut.takeRecords();le.push(()=>e.length>0&&mt(e));let t=le.length;queueMicrotask(()=>{if(le.length===t)for(;le.length>0;)le.shift()()})}function m(e){if(!ft)return e();dt();let t=e();return ue(),t}var pt=!1,Se=[];function rr(){pt=!0}function nr(){pt=!1,mt(Se),Se=[]}function mt(e){if(pt){Se=Se.concat(e);return}let t=[],r=new Set,n=new Map,i=new Map;for(let o=0;o<e.length;o++)if(!e[o].target._x_ignoreMutationObserver&&(e[o].type==="childList"&&(e[o].removedNodes.forEach(s=>{s.nodeType===1&&s._x_marker&&r.add(s)}),e[o].addedNodes.forEach(s=>{if(s.nodeType===1){if(r.has(s)){r.delete(s);return}s._x_marker||t.push(s)}})),e[o].type==="attributes")){let s=e[o].target,a=e[o].attributeName,c=e[o].oldValue,l=()=>{n.has(s)||n.set(s,[]),n.get(s).push({name:a,value:s.getAttribute(a)})},u=()=>{i.has(s)||i.set(s,[]),i.get(s).push(a)};s.hasAttribute(a)&&c===null?l():s.hasAttribute(a)?(u(),l()):u()}i.forEach((o,s)=>{lt(s,o)}),n.forEach((o,s)=>{Xt.forEach(a=>a(s,o))});for(let o of r)t.some(s=>s.contains(o))||Zt.forEach(s=>s(o));for(let o of t)o.isConnected&&Qt.forEach(s=>s(o));t=null,r=null,n=null,i=null}function Ce(e){return z(B(e))}function k(e,t,r){return e._x_dataStack=[t,...B(r||e)],()=>{e._x_dataStack=e._x_dataStack.filter(n=>n!==t)}}function B(e){return e._x_dataStack?e._x_dataStack:typeof ShadowRoot=="function"&&e instanceof ShadowRoot?B(e.host):e.parentNode?B(e.parentNode):[]}function z(e){return new Proxy({objects:e},Dn)}var Dn={ownKeys({objects:e}){return Array.from(new Set(e.flatMap(t=>Object.keys(t))))},has({objects:e},t){return t==Symbol.unscopables?!1:e.some(r=>Object.prototype.hasOwnProperty.call(r,t)||Reflect.has(r,t))},get({objects:e},t,r){return t=="toJSON"?Pn:Reflect.get(e.find(n=>Reflect.has(n,t))||{},t,r)},set({objects:e},t,r,n){let i=e.find(s=>Object.prototype.hasOwnProperty.call(s,t))||e[e.length-1],o=Object.getOwnPropertyDescriptor(i,t);return o?.set&&o?.get?o.set.call(n,r)||!0:Reflect.set(i,t,r)}};function Pn(){return Reflect.ownKeys(this).reduce((t,r)=>(t[r]=Reflect.get(this,r),t),{})}function Te(e){let t=n=>typeof n=="object"&&!Array.isArray(n)&&n!==null,r=(n,i="")=>{Object.entries(Object.getOwnPropertyDescriptors(n)).forEach(([o,{value:s,enumerable:a}])=>{if(a===!1||s===void 0||typeof s=="object"&&s!==null&&s.__v_skip)return;let c=i===""?o:`${i}.${o}`;typeof s=="object"&&s!==null&&s._x_interceptor?n[o]=s.initialize(e,c,o):t(s)&&s!==n&&!(s instanceof Element)&&r(s,c)})};return r(e)}function Re(e,t=()=>{}){let r={initialValue:void 0,_x_interceptor:!0,initialize(n,i,o){return e(this.initialValue,()=>In(n,i),s=>ht(n,i,s),i,o)}};return t(r),n=>{if(typeof n=="object"&&n!==null&&n._x_interceptor){let i=r.initialize.bind(r);r.initialize=(o,s,a)=>{let c=n.initialize(o,s,a);return r.initialValue=c,i(o,s,a)}}else r.initialValue=n;return r}}function In(e,t){return t.split(".").reduce((r,n)=>r[n],e)}function ht(e,t,r){if(typeof t=="string"&&(t=t.split(".")),t.length===1)e[t[0]]=r;else{if(t.length===0)throw error;return e[t[0]]||(e[t[0]]={}),ht(e[t[0]],t.slice(1),r)}}var ir={};function y(e,t){ir[e]=t}function fe(e,t){let r=Ln(t);return Object.entries(ir).forEach(([n,i])=>{Object.defineProperty(e,`$${n}`,{get(){return i(t,r)},enumerable:!1})}),e}function Ln(e){let[t,r]=_t(e),n={interceptor:Re,...t};return te(e,r),n}function or(e,t,r,...n){try{return r(...n)}catch(i){re(i,e,t)}}function re(e,t,r=void 0){e=Object.assign(e??{message:"No error message given."},{el:t,expression:r}),console.warn(`Alpine Expression Error: ${e.message}
