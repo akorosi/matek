@@ -178,7 +178,7 @@
         <button class="btn btn-success btn-lg text-2xl" style="padding-inline:2rem" @click="check()">Ellenőrzés</button>
         <button class="btn btn-warning btn-lg text-2xl" style="padding-inline:2rem" @click="reveal()">Megoldás</button>
       </div>
-      <button x-show="tb.done" class="btn btn-primary btn-lg mx-auto text-2xl" style="padding-inline:2rem" @click="nextTable()">Következő feladat</button>
+      <button x-show="tb.done" x-ref="nextBtn" class="btn btn-primary btn-lg mx-auto text-2xl" style="padding-inline:2rem" @click="nextTable()">Következő feladat</button>
     </div>
     <!-- Felugró ablak: szám beírása, forma vagy művelet választása -->
     <div x-show="md" x-cloak class="modal" @click.self="md=null">
@@ -1351,23 +1351,24 @@ function app(){return{
   mpick(x){const m=this.md;this.tb.rules[m.ri][m.j]=x;this.md=null;this.touch()},
   reveal(){const tb=this.tb;if(tb.done)return;tb.val=tb.cols.map((c,i)=>tb.hide[i]<0?'':''+c[tb.hide[i]]);this.touch();
     tb.shown=tb.done=true;this.locked=true;clearInterval(tm);this.tEnd=performance.now();
-    tb.msg='Ez a megoldás. Ez a feladat nem számít bele az eredménybe.'},
+    tb.msg='Ez a megoldás. Ez a feladat nem számít bele az eredménybe.';this.showNext()},
   check(){const tb=this.tb;
     if(tb.val.some((v,i)=>tb.hide[i]>=0&&v==='')){tb.msg='Írd be az összes hiányzó számot!';this.snd('bad');return}
-    const full=tb.cols.map((c,i)=>{const x=c.slice();if(tb.hide[i]>=0)x[tb.hide[i]]=+tb.val[i];return x}),good=tb.rules.filter(ruleOk);
-    tb.rok=tb.rules.map(r=>ruleOk(r)&&full.every(c=>holds(r,c)));
-    // Más, de minden oszlopra igaz szabály és számok is elfogadhatók
-    tb.cok=full.map((c,i)=>tb.hide[i]<0?null:c[tb.hide[i]]===tb.cols[i][tb.hide[i]]||good.length>0&&good.every(r=>holds(r,c)));
-    // Bármilyen igaz szabály elfogadható, bármilyen sorrendben; csak ugyanaz a szabály nem szerepelhet kétszer
-    const diff=new Set(tb.rules.map(r=>r.join())).size==3;
-    if(tb.rok.every(x=>x)&&tb.cok.every(x=>x!==false)&&diff){
+    // A szabályokat a táblázat valódi számain ellenőrizzük, így egy rossz szám nem teszi pirossá a jó szabályt.
+    // Bármilyen igaz szabály elfogadható, bármilyen sorrendben; csak ugyanaz a szabály nem szerepelhet kétszer.
+    tb.rok=tb.rules.map(r=>ruleOk(r)&&tb.cols.every(c=>holds(r,c)));
+    tb.cok=tb.cols.map((c,i)=>tb.hide[i]<0?null:+tb.val[i]===c[tb.hide[i]]);
+    const nok=tb.cok.every(x=>x!==false),rok=tb.rok.every(x=>x),diff=new Set(tb.rules.map(r=>r.join())).size==3;
+    if(nok&&rok&&diff){
       tb.done=true;this.locked=true;clearInterval(tm);this.tEnd=performance.now();this.times.push((this.tEnd-this.t0)/1000);
-      tb.msg='Szuper! Minden szám és szabály jó!';this.snd('ok');confetti({particleCount:80,spread:80,origin:{y:.7}});return}
-    this.snd('bad');
-    tb.msg=tb.rules.some(r=>!ruleOk(r))?'Töltsd ki mindhárom szabályt! Mindegyikben legyen egy = jel és mindhárom forma.'
-      :!tb.cok.every(x=>x!==false)?'Van egy rossz szám. Számold újra a pirosakat!'
-      :!tb.rok.every(x=>x)?'A piros szabály nem igaz minden oszlopra.'
-      :'Ugyanazt a szabályt ne írd le kétszer! Írj három különböző szabályt.'},
+      tb.msg='Szuper! Minden szám és szabály jó!';this.snd('ok');confetti({particleCount:80,spread:80,origin:{y:.7}});this.showNext();return}
+    this.snd('bad');const m=[];
+    if(!nok)m.push('Van rossz szám, számold újra a pirosakat!');
+    if(tb.rules.some(r=>!ruleOk(r)))m.push('Töltsd ki mindhárom szabályt! Mindegyikben legyen egy = jel és mindhárom forma.');
+    else if(!rok)m.push('A piros szabály nem igaz a táblázatra.');
+    else if(!diff)m.push('Ugyanazt a szabályt ne írd le kétszer! Írj három különböző szabályt.');
+    tb.msg=m.join(' ')},
+  showNext(){this.$nextTick(()=>this.$refs.nextBtn?.scrollIntoView({block:'nearest',behavior:'smooth'}))},
   finish(){clearInterval(tm);this.md=null;this.locked=true;this.view='summary';
     if(this.times.length){this.snd('win');confetti({particleCount:160,spread:100,origin:{y:.5}})}
     this.$nextTick(()=>this.draw())},
