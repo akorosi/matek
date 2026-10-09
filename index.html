@@ -1272,19 +1272,20 @@ const GEN={
     const c=chain(Array.from({length:n},(_,i)=>i==k?pt:Math.random()<.3?mdTerm(s):num(s)),pt.neg?k:-1);
     return c&&flat(c.t)!==c.v?c:null})};
 
-// Táblázatos feladat: 3 sor (▲ ● ■), oszloponként egy szám rejtve, végig ugyanaz a szabály (X + Y = Z vagy X × Y = Z)
+// Táblázatos feladat: 3 sor (▲ ● ■), oszloponként egy szám rejtve, végig ugyanaz a szabály: ▲ (művelet) ● = ■
 const SHN=['háromszög','kör','négyzet'],SHC=['#f97316','#3b82f6','#22c55e'];
 const SHP=['<path d="M12 2 23 21H1Z"/>','<circle cx="12" cy="12" r="10.5"/>','<rect x="2" y="2" width="20" height="20" rx="3"/>'];
 const shape=(i,z=28)=>`<svg class="shp" width="${z}" height="${z}" viewBox="0 0 24 24" fill="${SHC[i]}" role="img" aria-label="${SHN[i]}">${SHP[i]}</svg>`;
 function genTable(s){let{min,max,cols:n}=s.table;const ops=[],ml=Math.max(2,min);
-  if(max>=2*min)ops.push('+');if(ml*ml<=max)ops.push('×');if(!ops.length){min=3;max=99;ops.push('+')}
-  const op=any(ops),o=[0,1,2].sort(()=>Math.random()-.5),cols=[],inv=op=='+'?'−':'÷';
+  if(max>=2*min)ops.push('+','−');if(ml*ml<=max)ops.push('×','÷');if(!ops.length){min=3;max=99;ops.push('+','−')}
+  const op=any(ops),add=op=='+'||op=='−',cols=[];
   for(let i=0;cols.length<n&&i<1000;i++){let x,y,z;
-    if(op=='+'){x=rnd(min,max-min);y=rnd(min,max-x);z=x+y}else{x=rnd(ml,Math.floor(max/ml));y=rnd(ml,Math.floor(max/x));z=x*y}
-    if(z<min)continue;const c=[];c[o[0]]=x;c[o[1]]=y;c[o[2]]=z;if(!cols.some(k=>k.join()==c.join()))cols.push(c)}
+    if(add){x=rnd(min,max-min);y=rnd(min,max-x);z=x+y}else{x=rnd(ml,Math.floor(max/ml));y=rnd(ml,Math.floor(max/x));z=x*y}
+    if(z<min)continue;const c=op=='+'||op=='×'?[x,y,z]:[z,y,x];if(!cols.some(k=>k.join()==c.join()))cols.push(c)}
+  const inv={'+':'−','−':'+','×':'÷','÷':'×'}[op];
   return{cols,hide:cols.map(()=>rnd(0,2)),val:cols.map(()=>''),rules:[0,1,2].map(()=>[null,null,null,'=',null]),
     rok:[null,null,null],cok:cols.map(()=>null),msg:'',done:false,shown:false,
-    sol:[[o[0],op,o[1],'=',o[2]],[o[2],inv,o[0],'=',o[1]],[o[2],inv,o[1],'=',o[0]]]}}
+    sol:op=='+'||op=='×'?[[0,op,1,'=',2],[2,inv,0,'=',1],[2,inv,1,'=',0]]:[[0,op,1,'=',2],[1,inv,2,'=',0],[0,op,2,'=',1]]}}
 // Szabály: [forma, művelet, forma, művelet, forma], pontosan egy "=" jellel
 const OPS=['+','−','×','÷','='];
 const ruleOk=r=>r.every(x=>x!=null)&&(r[1]=='=')+(r[3]=='=')==1&&new Set([r[0],r[2],r[4]]).size==3;
